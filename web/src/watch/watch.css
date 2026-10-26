@@ -1,0 +1,240 @@
+.watch-page .intro {
+  display: flex;
+  align-items: center;
+  margin: 28px 0 22px;
+}
+.watch-page h1 {
+  margin: 0;
+}
+.watch-nav {
+  display: flex;
+  gap: 24px;
+  font: 700 18px var(--display);
+}
+.watch-nav a,
+.view-tabs a {
+  color: inherit;
+  text-underline-offset: 6px;
+}
+.watch-nav [aria-current] {
+  color: #2f7cf6;
+}
+#watch-tracks {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+#watch-tracks .track-card {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+  padding: 12px 18px;
+}
+#watch-tracks svg {
+  width: 68px;
+  height: 42px;
+  flex-shrink: 0;
+}
+#watch-tracks strong {
+  font: italic 800 22px var(--display);
+}
+.watch-stage {
+  position: relative;
+  overflow: hidden;
+  background: #5f9e3a;
+}
+#watch-canvas {
+  height: clamp(340px, 52vw, 610px);
+}
+#watch-canvas canvas {
+  display: block;
+}
+.watch-page .circuit-bar {
+  gap: 16px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  background: #000c;
+  color: #fff;
+}
+#watch-state {
+  margin-left: auto;
+  font: 12px var(--mono);
+}
+#lap-timer {
+  font: 500 20px var(--mono);
+}
+.watch-caption {
+  position: absolute;
+  left: 24px;
+  bottom: 24px;
+  max-width: calc(100% - 48px);
+  padding: 15px 20px;
+  background: #000c;
+  color: #fff;
+  pointer-events: none;
+}
+.watch-caption p {
+  margin: 0;
+}
+#attempt-kicker {
+  font: 500 11px var(--mono);
+  color: #a9d0ff;
+}
+#attempt-headline {
+  margin: 5px 0;
+  font: italic 800 32px/1 var(--display);
+}
+#attempt-outcome {
+  font: 500 13px var(--mono);
+}
+.watch-progress {
+  background: #111;
+  color: #fff;
+  padding: 18px 24px;
+}
+.watch-control-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font: italic 800 20px var(--display);
+}
+.watch-controls {
+  display: flex;
+  gap: 8px;
+}
+.watch-controls button {
+  background: #2f7cf6;
+  color: #fff;
+  border: 0;
+  padding: 8px 18px;
+  font: 700 17px var(--display);
+}
+#progress-bar {
+  display: flex;
+  gap: 3px;
+  margin-top: 14px;
+}
+#progress-bar .segment {
+  background: #454545;
+  border: 0;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0;
+  position: relative;
+}
+#progress-bar .segment.done {
+  background: #2863ae;
+}
+#progress-bar .segment.current {
+  background: #2f7cf6;
+  box-shadow: inset 0 -4px #fff;
+}
+.progress-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font: 11px var(--mono);
+  color: #c5c5c5;
+}
+.watch-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin: 16px 0;
+  font: 11px var(--mono);
+}
+.watch-footer label {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  gap: 8px;
+  cursor: pointer;
+}
+#watch-rate {
+  margin-left: auto;
+}
+.watch-explainer {
+  max-width: 75ch;
+  font-size: 13px;
+  line-height: 1.6;
+  margin-bottom: 28px;
+}
+.watch-page #notice {
+  padding: 14px;
+  background: #000c;
+  color: #fff;
+}
+.watch-page ::selection {
+  background: #2f7cf6;
+  color: white;
+}
+@media (max-width: 720px) {
+  .watch-nav {
+    gap: 12px;
+    font-size: 14px;
+  }
+  .watch-page .intro {
+    display: flex;
+    display: block;
+    margin: 20px 0;
+  }
+  .watch-page .intro-note {
+    margin-top: 8px;
+  }
+  #watch-tracks {
+    gap: 6px;
+  }
+  #watch-tracks .track-card {
+    padding: 8px;
+    flex-direction: column;
+    gap: 4px;
+  }
+  #watch-tracks strong {
+    font-size: 18px;
+  }
+  #watch-canvas {
+    height: 380px;
+  }
+  .watch-caption {
+    position: static;
+    max-width: none;
+    background: #000c;
+    left: 12px;
+    bottom: 12px;
+    padding: 12px;
+  }
+  #attempt-headline {
+    font-size: 26px;
+  }
+  #attempt-kicker {
+    font-size: 10px;
+  }
+  .watch-control-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .watch-progress {
+    padding: 14px 12px;
+  }
+  .watch-controls {
+    width: 100%;
+  }
+  .watch-controls button {
+    flex: 1;
+    padding: 8px;
+  }
+  .watch-footer {
+    gap: 4px 12px;
+  }
+  #watch-rate {
+    margin-left: 0;
+  }
+}

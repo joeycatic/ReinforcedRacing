@@ -5,25 +5,79 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#5f9e3a" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <meta
+      name="description"
+      content="Watch one car learn a racing line, from its first attempt to the final policy."
+    />
     <title>Reinforced Racing — Watch it learn</title>
   </head>
-  <body>
-    <main>
-      <div class="circuit-bar">
-        <strong>WATCH IT LEARN</strong>
-        <span id="watch-state" role="status">LOADING</span>
-        <div class="race-actions">
-          <button id="watch-play" disabled>Play</button>
+  <body class="watch-page">
+    <a class="skip-link" href="#watch-canvas">Skip to circuit</a>
+    <div class="shell">
+      <header class="masthead">
+        <a class="brand" href="./" aria-label="Reinforced Racing home"
+          ><span class="brand-mark" aria-hidden="true">R<span>R</span></span
+          ><span>REINFORCED<br /><b>RACING</b></span></a
+        >
+        <nav class="watch-nav" aria-label="Experience">
+          <a href="./race.html">RACE THE AI</a
+          ><a href="./watch.html" aria-current="page">WATCH IT LEARN</a>
+        </nav>
+      </header>
+      <main>
+        <div class="intro">
+          <h1>WATCH IT <span>LEARN.</span></h1>
+          <p class="intro-note">
+            One car. Every breakthrough.<br />Watch a racing line take shape.
+          </p>
         </div>
-      </div>
-      <div id="circuit" class="circuit" tabindex="0"></div>
-      <nav
-        id="watch-segments"
-        class="race-actions"
-        aria-label="Training progress"
-        style="display: flex; flex-wrap: wrap; padding: 12px; gap: 8px"
-      ></nav>
-    </main>
+        <nav id="watch-tracks" aria-label="Choose a circuit"></nav>
+        <section class="watch-stage" aria-label="Training attempts">
+          <div class="circuit-bar">
+            <strong id="watch-track-name">PREPARING CIRCUIT</strong
+            ><span id="watch-state" role="status">LOADING</span
+            ><output
+              id="lap-timer"
+              hidden
+              aria-label="Replay lap time"
+            ></output>
+          </div>
+          <div id="watch-canvas" tabindex="0"></div>
+          <div class="watch-caption" aria-live="polite">
+            <p id="attempt-kicker">LOADING ATTEMPTS</p>
+            <h2 id="attempt-headline">
+              From the first attempt to the final policy.
+            </h2>
+            <p id="attempt-outcome">Preparing verified replays…</p>
+          </div>
+        </section>
+        <section class="watch-progress" aria-label="Training progress">
+          <div class="watch-control-row">
+            <strong>TRAINING PROGRESS</strong>
+            <div class="watch-controls">
+              <button id="watch-play" disabled aria-pressed="false">Play</button
+              ><button id="watch-replay" disabled>Replay</button
+              ><button id="watch-skip" disabled>Skip to final</button>
+            </div>
+          </div>
+          <div id="progress-bar" aria-label="Choose an attempt"></div>
+          <div class="progress-labels">
+            <span>first attempt</span><span>final policy</span>
+          </div>
+        </section>
+        <div class="watch-footer">
+          <label
+            ><input id="crash-toggle" type="checkbox" /> Crash locations</label
+          ><span id="crash-stage">Stochastic training-stage heatmap</span
+          ><span id="watch-rate"></span>
+        </div>
+        <p id="notice" role="status" hidden></p>
+        <p class="watch-explainer">
+          Earlier attempts remain as faded lines. The bar follows training
+          progress, not lap time. Select any segment to revisit an attempt.
+        </p>
+      </main>
+    </div>
     <script type="module" src="/src/watch/main.ts"></script>
   </body>
 </html>

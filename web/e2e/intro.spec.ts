@@ -76,10 +76,8 @@ test("intro hero runs the final policy", async ({ page }) => {
 test("Watch it learn opens directly in replay mode", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("link", { name: "Watch it learn", exact: true }).click();
-  await expect(page).toHaveURL(/race\.html#watch$/);
-  await expect(page.locator("#system-status")).toHaveText("GHOSTS READY", {
-    timeout: 30000,
-  });
+  await expect(page).toHaveURL(/watch\.html$/);
+  await expect(page.locator("#attempt-kicker")).toContainText("ATTEMPT 1 / 10");
 });
 
 test("reduced motion stays static and can resume the live hero", async ({

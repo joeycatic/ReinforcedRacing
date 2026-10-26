@@ -951,68 +951,6 @@ footer i {
 .view-tabs button[aria-pressed="true"] span {
   color: var(--player);
 }
-.ghost-lineup {
-  margin: 22px 0;
-}
-.ghost-lineup > div {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid var(--border);
-  border-left: 2px solid var(--ghost-color);
-  padding: 12px 9px;
-  margin-bottom: 8px;
-  font: 9px var(--mono);
-}
-.ghost-lineup strong {
-  color: var(--ghost-color);
-  font-weight: 500;
-}
-.ghost-lineup span {
-  font-size: 8px;
-  color: var(--muted);
-}
-#ghost-sidebar > .section-label {
-  margin: 25px 0 14px;
-}
-.playback-controls {
-  padding: 14px 22px;
-  background: #172429;
-  border-top: 1px solid var(--border);
-}
-.playback-buttons {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-.playback-buttons button {
-  border: 1px solid #48635f;
-  color: #e5ece5;
-  background: #233736;
-  font: 500 11px var(--mono);
-  padding: 0 16px;
-  min-width: 78px;
-}
-.playback-buttons button:first-child {
-  background: var(--player);
-  color: #142421;
-  border-color: var(--player);
-}
-.playback-buttons label {
-  font: 9px var(--mono);
-  color: var(--muted);
-  margin-left: 8px;
-}
-.playback-buttons select {
-  width: 72px;
-  font: 11px var(--mono);
-  padding: 0 8px;
-}
-.playback-buttons output {
-  margin-left: auto;
-  font: 11px var(--mono);
-  color: var(--player);
-}
 input[type="range"] {
   width: 100%;
   height: 25px;
@@ -1158,44 +1096,6 @@ input[type="checkbox"] {
   }
   .analysis-layers > .eyebrow {
     margin-bottom: 8px;
-  }
-  .playback-controls {
-    padding: 12px;
-  }
-  .playback-buttons {
-    gap: 6px;
-    flex-wrap: wrap;
-  }
-  .playback-buttons button {
-    padding: 0 9px;
-    min-width: 60px;
-  }
-  .playback-buttons label {
-    margin-left: auto;
-  }
-  .playback-buttons output {
-    width: 100%;
-    text-align: right;
-    font-size: 10px;
-    margin-top: 5px;
-  }
-  body[data-mode="ghosts"] .setup {
-    display: block;
-  }
-  #ghost-sidebar > .field-note {
-    margin: 14px 0;
-  }
-  .ghost-lineup {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-  }
-  .ghost-lineup > div {
-    font-size: 9px;
-    margin: 0;
-  }
-  .ghost-lineup span {
-    font-size: 7px;
   }
   .scale-caption {
     font-size: 6px;
@@ -1601,54 +1501,6 @@ footer {
   padding: 22px 30px;
   background: #192516;
 }
-body[data-mode="ghosts"] .race-layout {
-  display: grid;
-  grid-template-columns: 320px minmax(0, 1fr);
-}
-body[data-mode="ghosts"] #prerace {
-  position: static;
-  min-height: 0;
-  padding: 24px;
-  background: #edf2e5;
-}
-body[data-mode="ghosts"] #prerace h2 {
-  font-size: 30px;
-}
-body[data-mode="ghosts"] #track-cards {
-  grid-template-columns: 1fr;
-  gap: 8px;
-}
-body[data-mode="ghosts"] .track-card {
-  padding: 8px 12px;
-  grid-template-columns: 66px 1fr;
-}
-body[data-mode="ghosts"] .track-card svg {
-  grid-column: 1;
-  grid-row: span 2;
-  height: 50px;
-}
-body[data-mode="ghosts"] .track-card strong {
-  font-size: 21px;
-}
-body[data-mode="ghosts"] .track-card p {
-  display: none;
-}
-body[data-mode="ghosts"] .circuit {
-  height: calc(100svh - 220px);
-}
-body[data-mode="ghosts"] .playback-controls {
-  background: #192516;
-}
-body[data-mode="ghosts"] #ghost-sidebar {
-  color: #24351e;
-}
-body[data-mode="ghosts"] #ghost-sidebar .field-note,
-body[data-mode="ghosts"] #ghost-sidebar .section-label {
-  color: #3b5130;
-}
-body[data-mode="ghosts"] .ghost-lineup > div {
-  background: #162315;
-}
 @media (max-width: 720px) {
   .masthead {
     height: 64px;
@@ -1805,34 +1657,6 @@ body[data-mode="ghosts"] .ghost-lineup > div {
   .notice {
     padding: 12px 20px;
   }
-  body[data-mode="ghosts"] .race-layout {
-    display: flex;
-    flex-direction: column;
-  }
-  body[data-mode="ghosts"] #prerace {
-    padding: 20px;
-  }
-  body[data-mode="ghosts"] #track-cards {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  body[data-mode="ghosts"] .track-card {
-    grid-template-columns: 1fr;
-    padding: 6px;
-  }
-  body[data-mode="ghosts"] .track-card svg {
-    grid-column: 1;
-    height: 45px;
-  }
-  body[data-mode="ghosts"] .track-card strong {
-    font-size: 17px;
-  }
-  body[data-mode="ghosts"] #ghost-sidebar {
-    display: none;
-  }
-  body[data-mode="ghosts"] .circuit {
-    height: 440px;
-    min-height: 440px;
-  }
   .result h2 {
     font-size: 46px;
   }
@@ -1848,4 +1672,21 @@ body[data-mode="ghosts"] .ghost-lineup > div {
 .timer-block,
 .split-block {
   text-shadow: none;
+}
+
+/* Navigation remains aligned when Watch opens its own page. */
+.view-tabs a {
+  display: flex;
+  align-items: center;
+  padding: 0 18px;
+  color: #46503f;
+  font: 500 10px var(--mono);
+  letter-spacing: 0.8px;
+  text-underline-offset: 5px;
+}
+@media (max-width: 720px) {
+  .view-tabs a {
+    padding: 12px 7px;
+    font-size: 10px;
+  }
 }

@@ -139,3 +139,10 @@ Task 3 overlap; attempt type validation and replay access remain Task 3 work.
 - Retain `setGhosts`/`renderGhosts` until Task 5 removes race/controller callers, per the integration ruling; removing them in this task would break typecheck and existing Watch behavior. New attempts have an independent scene layer, hidden in legacy modes.
 - Move the timeline's hold/stall/rate constants into `visualConfig.watch` as required by scene integration (superseding Task 3's temporary ownership). Completed stalled trails use the same configured cut as playback; all paths stay open rather than closing back to the start.
 - Keep the Task 4 mount deliberately minimal: paused Sweep scene, Play/Pause and numbered attempt buttons. Full captions, navigation, track selection, crash map, reduced-motion/visibility lifecycle and removal of legacy ghost mode belong to Task 5.
+
+### M8 Watch page integration
+
+- Watch uses the existing Stadium grass, kerbs, Formula cars, locally hosted Barlow Condensed and black HUD boxes. The approved storyboard governs the new page; no new visual world or dependencies are introduced.
+- Crash locations remain off by default. Attempts export replays only, so Watch displays the stochastic heatmap from the nearest snapshot at or below the replay's actual training step. Its label identifies that snapshot stage and the run count from heatmap metadata. This keeps the bundle to replays only, as the spec requires; the heatmap does not claim to be the deterministic attempt's crashes.
+- Normal motion starts the sequence on load. Reduced motion starts paused, and explicit Play or Replay plays only the selected attempt, stopping before the next segment. Manual segment selection and Skip remain available. Hiding the tab pauses without automatic resume.
+- Replay failures clear prior attempts immediately and preserve the circuit picker for retry; revision checks apply independently to track/replay and heatmap loads. On phones the caption sits below the canvas so it cannot obscure the racing line.

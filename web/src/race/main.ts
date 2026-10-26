@@ -1,3 +1,4 @@
+if (location.hash === "#watch") location.replace("./watch.html");
 import "../style.css";
 import { visualConfig } from "../viewer/visual-config";
 import { ViewerController } from "../viewer/controller";
@@ -79,10 +80,8 @@ const scene = new RaceScene(element("canvas-host"));
 const input = new DriverInput(
   begin,
   () => {
-    if (viewer?.mode !== "ghosts") {
-      engine?.respawn();
-      clock?.clear();
-    }
+    engine?.respawn();
+    clock?.clear();
   },
   togglePause,
 );
@@ -106,11 +105,6 @@ function focusCircuit(): void {
   stage.focus({ preventScroll: true });
 }
 function begin(): void {
-  if (viewer?.mode === "ghosts") {
-    viewer.playback?.restart();
-    viewer.update();
-    return;
-  }
   if (loading || !engine || !clock) return;
   input.clear();
   clock.clear();
@@ -126,12 +120,6 @@ function begin(): void {
   );
 }
 function togglePause(): void {
-  if (viewer?.mode === "ghosts") {
-    if (viewer.playback?.playing) viewer.pause();
-    else viewer.playback?.play();
-    viewer.update();
-    return;
-  }
   if (!engine || loading) return;
   if (engine.phase === "paused") {
     engine.resume();
@@ -160,7 +148,7 @@ function error(error: unknown): void {
   notice.textContent = `${error instanceof Error ? error.message : String(error)}. Check the asset export and reload.`;
   notice.classList.add("error");
 }
-async function selectRace(preserveRace = false): Promise<void> {
+async function selectRace(): Promise<void> {
   const serial = ++loadSerial;
   loading = true;
   engine?.pause();
@@ -169,8 +157,7 @@ async function selectRace(preserveRace = false): Promise<void> {
   start.disabled = true;
   pause.disabled = true;
 
-  labels["system-status"].textContent =
-    viewer?.mode === "ghosts" ? "LOADING GHOSTS" : "LOADING POLICY";
+  labels["system-status"].textContent = "LOADING POLICY";
   labels["race-state"].textContent = "LOADING";
   message("SETTING THE GRID", "Preparing your live opponent.", "NEXT RACE");
   try {
@@ -179,7 +166,7 @@ async function selectRace(preserveRace = false): Promise<void> {
       (m) => m.medal === selectedMedal,
     )!;
     const track = tracks.get(selectedTrack)!;
-    if (viewer?.mode !== "ghosts") {
+    {
       const replay = await loader.medalReplay(snapshot, track.data.id);
       if (serial !== loadSerial) return;
       if (policyId !== snapshot.medal) {
@@ -196,15 +183,8 @@ async function selectRace(preserveRace = false): Promise<void> {
         await previous?.release();
       }
       if (serial !== loadSerial) return;
-      if (
-        !preserveRace ||
-        !engine ||
-        engine.track.data.id !== track.data.id ||
-        engine.policy !== policy
-      ) {
-        engine = new RaceEngine(track, config, policy!);
-        clock = new FixedClock(engine);
-      }
+      engine = new RaceEngine(track, config, policy!);
+      clock = new FixedClock(engine);
       ghostFrames = replay.frames;
       // Warm up the graph before the countdown, keeping the first driving tick smooth.
       await policy!.predict(
@@ -243,18 +223,8 @@ async function selectRace(preserveRace = false): Promise<void> {
     loading = false;
 
     start.disabled = false;
-    labels["system-status"].textContent =
-      viewer?.mode === "ghosts" ? "GHOSTS READY" : "LIVE POLICY READY";
-    for (const id of ["mode-race", "mode-ghosts"])
-      element<HTMLButtonElement>(id).disabled = false;
-    if (viewer?.mode === "ghosts") {
-      center.hidden = true;
-      labels["race-state"].textContent = "REPLAY PAUSED";
-      announce(
-        "Every stage starts together. Play, change speed, or scrub through the recorded runs.",
-      );
-      return;
-    }
+    labels["system-status"].textContent = "LIVE POLICY READY";
+    element<HTMLButtonElement>("mode-race").disabled = false;
     if (engine?.phase === "ready") prerace.hidden = false;
     if (engine?.phase === "paused") {
       announce("Your race is paused. Resume when you are ready.");
@@ -270,7 +240,7 @@ async function selectRace(preserveRace = false): Promise<void> {
   }
 }
 function updateHud(): void {
-  if (!engine || loading || viewer?.mode === "ghosts") return;
+  if (!engine || loading) return;
   const phase = engine.phase;
   const showSensors = element<HTMLInputElement>("sensors-toggle").checked;
   element("ai-inspector").hidden = !showSensors;
@@ -429,20 +399,7 @@ async function frame(now: number): Promise<void> {
   const elapsed = Math.max(0, (now - lastFrame) / 1000);
   lastFrame = now;
   try {
-    if (!loading && viewer?.mode === "ghosts" && viewer.playback) {
-      viewer.advance(Math.min(elapsed, 0.1));
-      scene.renderGhosts(viewer.playback);
-      if (now - lastHud > 30) {
-        viewer.update();
-        lastHud = now;
-        labels["race-state"].textContent =
-          viewer.playback.seconds === viewer.playback.duration
-            ? "REPLAY COMPLETE"
-            : viewer.playback.playing
-              ? "REPLAY PLAYING"
-              : "REPLAY PAUSED";
-      }
-    } else if (engine && clock && !loading) {
+    if (engine && clock && !loading) {
       stepping = clock.advance(elapsed, input.action());
       await stepping;
       stepping = null;
@@ -496,55 +453,11 @@ for (const button of document.querySelectorAll(".change-race"))
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) {
     engine?.pause();
-    viewer?.pause();
     clock?.clear();
     input.clear();
     lastPhase = "";
   }
 });
-async function changeMode(mode: "race" | "ghosts"): Promise<void> {
-  if (!viewer || loading || viewer.mode === mode) return;
-  engine?.pause();
-  viewer.pause();
-  input.clear();
-  clock?.clear();
-  viewer.mode = mode;
-  document.body.dataset.mode = mode;
-  prerace.hidden = mode === "race" && engine?.phase === "paused";
-  element("ai-inspector").hidden = true;
-  document.querySelector(".intro-note")!.innerHTML =
-    mode === "ghosts"
-      ? "Six stages. One start.<br>Watch a racing line emerge."
-      : "It learned from zero.<br>Now it’s your turn to drive.";
-  document.querySelector(".intro .eyebrow")!.textContent =
-    mode === "ghosts"
-      ? "FROM THE FIRST ATTEMPT TO THE FINAL POLICY."
-      : "BUILT TO LEARN. READY TO RACE.";
-  for (const item of document.querySelectorAll<HTMLElement>("[data-race-only]"))
-    item.hidden = mode === "ghosts";
-  element("ghost-sidebar").hidden = mode !== "ghosts";
-  element("playback-controls").hidden = mode !== "ghosts";
-  for (const name of ["race", "ghosts"])
-    element(`mode-${name}`).setAttribute("aria-pressed", String(mode === name));
-  document.querySelector("h1")!.innerHTML =
-    mode === "ghosts"
-      ? "FROM ZERO. <span>TO</span> THE LINE"
-      : "HUMAN <span>VS.</span> MACHINE";
-  document.querySelector(".circuit-bar .divider + span")!.textContent =
-    mode === "ghosts" ? "TRAINING REPLAYS" : "TIME ATTACK";
-  scene.app.canvas.setAttribute(
-    "aria-label",
-    mode === "ghosts"
-      ? "Synchronized ghost replays, colored from early blue policies to the final orange policy."
-      : "Race circuit. Your car is mint; the live AI is orange.",
-  );
-  await selectRace(mode === "race");
-}
-element("mode-race").addEventListener("click", () => void changeMode("race"));
-element("mode-ghosts").addEventListener(
-  "click",
-  () => void changeMode("ghosts"),
-);
 function renderCards(): void {
   for (const card of document.querySelectorAll<HTMLElement>(".track-card"))
     card.setAttribute(
@@ -615,7 +528,6 @@ async function boot(): Promise<void> {
     selectedTrack = loader.manifest.tracks[0].id;
     renderCards();
     await selectRace();
-    if (location.hash === "#watch") await changeMode("ghosts");
     requestAnimationFrame(frame);
   } catch (cause) {
     error(cause);

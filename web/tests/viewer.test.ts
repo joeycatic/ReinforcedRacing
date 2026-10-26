@@ -1,113 +1,15 @@
 import { describe, it, expect } from "vitest";
-import type { Heatmap, Replay, Snapshot } from "../src/assets/load";
-import {
-  GhostPlayback,
-  replayFrame,
-  snapshotColor,
-  snapshotLabel,
-  type GhostRun,
-} from "../src/viewer/playback";
+import type { Heatmap } from "../src/assets/load";
+import { snapshotColor, snapshotLabel } from "../src/watch/timeline";
 import { heatmapPixels, heatmapScale } from "../src/viewer/heatmap";
-function run(
-  id: string,
-  frames: number[][],
-  finished = false,
-  crashed = false,
-): GhostRun {
-  const snapshot = {
-    id,
-    step: id === "final" ? 6000000 : Number(id),
-    checkpoint_sha256: "a".repeat(64),
-    model: { path: "m.onnx", bytes: 1, sha256: "a".repeat(64) },
-    replays: {},
-    heatmaps: {},
-  } satisfies Snapshot;
-  const data = {
-    version: "replay.v1",
-    dt: 0.1,
-    columns: [],
-    scales: [],
-    deltas: [],
-    metadata: {
-      track_id: "test",
-      snapshot_id: id,
-      physics_ticks: frames.length - 1,
-      finished,
-      crashed,
-    },
-  } satisfies Replay;
-  return { snapshot, data, frames };
-}
-const frame = (x: number, heading = 0): number[] => [x, 0, heading, 10, 0, 1];
-describe("synchronized recorded ghosts", () => {
-  it("uses a common start clock and holds ended ghosts at their recorded last pose", () => {
-    const a = run("0", [frame(0), frame(1)], false, true),
-      b = run("final", [frame(0), frame(10), frame(20)], true);
-    const p = new GhostPlayback([a, b]);
-    expect(p.poses().map((g) => g.status)).toEqual(["ready", "ready"]);
-    p.play();
-    p.advance(0.15);
-    const poses = p.poses();
-    expect(poses[0].frame).toEqual(frame(1));
-    expect(poses[0].status).toBe("crashed");
-    expect(poses[1].frame[0]).toBeCloseTo(15, 12);
-    expect(poses[1].status).toBe("running");
-    p.advance(1);
-    expect(p.seconds).toBe(0.2);
-    expect(p.playing).toBe(false);
-    expect(p.poses()[1].status).toBe("finished");
-    expect(p.poses()[1].frame).toEqual(frame(20));
-    expect(a.frames[0]).toEqual(frame(0));
-  });
-  it("pauses, resumes, seeks and restarts at every supported rate", () => {
-    for (const rate of [0.5, 1, 2, 4]) {
-      const p = new GhostPlayback([
-        run(
-          "0",
-          Array.from({ length: 101 }, (_, i) => frame(i)),
-        ),
-      ]);
-      p.setRate(rate);
-      p.play();
-      p.advance(1);
-      expect(p.seconds).toBe(rate);
-      p.pause();
-      p.advance(2);
-      expect(p.seconds).toBe(rate);
-      p.seek(4.5);
-      expect(p.seconds).toBe(4.5);
-      expect(p.playing).toBe(false);
-      p.restart();
-      expect(p.seconds).toBe(0);
-      expect(p.playing).toBe(true);
-      p.seek(99);
-      expect(p.seconds).toBe(10);
-      expect(p.poses()[0].status).toBe("timeout");
-      p.play();
-      expect(p.seconds).toBe(0);
-      expect(() => p.setRate(0)).toThrow();
-      expect(() => p.advance(NaN)).toThrow();
-      expect(() => p.seek(Infinity)).toThrow();
-    }
-  });
-  it("interpolates heading through the shortest angle and clamps negative/late times", () => {
-    const r = run("0", [frame(0, Math.PI - 0.1), frame(2, -Math.PI + 0.1)]);
-    expect(replayFrame(r, 0.05)[0]).toBe(1);
-    expect(replayFrame(r, 0.05)[2]).toBeCloseTo(Math.PI, 12);
-    expect(replayFrame(r, -1)).toEqual(r.frames[0]);
-    expect(replayFrame(r, 10)).toEqual(r.frames[1]);
-  });
-  it("labels actual steps and uses distinct cool-to-warm stage colors", () => {
-    expect(
-      snapshotLabel({ ...run("0", [frame(0)]).snapshot, step: 50048 }),
-    ).toBe("50K");
-    expect(snapshotLabel(run("final", [frame(0)]).snapshot)).toBe("6M FINAL");
-    const colors = Array.from({ length: 6 }, (_, i) => snapshotColor(i, 6));
-    expect(colors[0]).toBe(0x70abff);
-    expect(colors[5]).toBe(0xff9366);
-    expect(new Set(colors).size).toBe(6);
-    expect(snapshotColor(0, 1)).toBe(0xff9366);
-  });
+it("labels actual steps and cool-to-warm colours", () => {
+  expect(snapshotLabel({ step: 50048 })).toBe("50K");
+  expect(snapshotLabel({ step: 6000000, id: "final" })).toBe("6M FINAL");
+  const colors = Array.from({ length: 6 }, (_, i) => snapshotColor(i, 6));
+  expect(colors[0]).toBe(0x70abff);
+  expect(colors[5]).toBe(0xff9366);
+  expect(new Set(colors).size).toBe(6);
+  expect(snapshotColor(0, 1)).toBe(0xff9366);
 });
 function map(): Heatmap {
   return {

@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#10191c" />
     <meta
       name="description"
-      content="Take the wheel against a racing AI trained from scratch. Three circuits, six stages of learning, one lap to beat it."
+      content="Take the wheel against a racing AI trained from scratch. Three circuits, one lap to beat it."
     />
     <title>Reinforced Racing — Take the wheel</title>
   </head>
@@ -23,9 +23,7 @@
           <button id="mode-race" disabled aria-pressed="true">
             <span>01</span> RACE THE AI
           </button>
-          <button id="mode-ghosts" disabled aria-pressed="false">
-            <span>02</span> WATCH IT LEARN
-          </button>
+          <a href="./watch.html">WATCH IT LEARN</a>
         </nav>
         <div class="system-status">
           <i></i><span id="system-status">CONNECTING</span>
@@ -95,17 +93,7 @@
             >
               <span>LOADING THE GRID</span><span aria-hidden="true">↗</span>
             </button>
-            <section id="ghost-sidebar" hidden aria-label="Training stages">
-              <p class="section-label">ONE START. EVERY STAGE.</p>
-              <p class="field-note">
-                The same circuit, from the first attempt to the final policy.
-                All ghosts share one start time.
-              </p>
-              <div id="ghost-lineup" class="ghost-lineup"></div>
-              <p class="field-note">
-                Each ghost stops at its finish, crash, or time limit.
-              </p>
-            </section>
+
             <details class="controls" data-race-only>
               <summary class="section-label">
                 KEYBOARD CONTROLS <span>+</span>
@@ -240,36 +228,6 @@
                   RACE AGAIN <span>↗</span>
                 </button>
               </div>
-            </div>
-            <div
-              id="playback-controls"
-              class="playback-controls"
-              hidden
-              aria-label="Ghost playback"
-            >
-              <div class="playback-buttons">
-                <button id="playback-play" aria-pressed="false">Play</button
-                ><button id="playback-restart">Restart</button
-                ><label for="playback-speed">Speed</label
-                ><select id="playback-speed">
-                  <option value="0.5">0.5×</option>
-                  <option value="1" selected>1×</option>
-                  <option value="2">2×</option>
-                  <option value="4">4×</option></select
-                ><output id="playback-time" for="playback-seek"
-                  >0.0 / 0.0 s</output
-                >
-              </div>
-              <label class="sr-only" for="playback-seek"
-                >Replay position in seconds</label
-              ><input
-                id="playback-seek"
-                type="range"
-                min="0"
-                max="200"
-                value="0"
-                step="0.1"
-              />
             </div>
           </section>
         </div>

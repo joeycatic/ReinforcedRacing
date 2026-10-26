@@ -182,3 +182,23 @@ export class WatchTimeline {
     return Array.from({ length: this.current().index }, (_, i) => i);
   }
 }
+
+/** Continuous cool-to-warm colors, also shared by the on-track labels and legend. */
+export function snapshotColor(index: number, count: number): number {
+  const stops = [0x70abff, 0x80e4d0, 0xff9366],
+    t = count <= 1 ? 1 : index / (count - 1);
+  const section = Math.min(1, Math.floor(t * 2)),
+    fraction = t * 2 - section;
+  const a = stops[section],
+    b = stops[section + 1];
+  return [16, 8, 0].reduce(
+    (value, shift) =>
+      value |
+      (Math.round(
+        ((a >> shift) & 255) +
+          (((b >> shift) & 255) - ((a >> shift) & 255)) * fraction,
+      ) <<
+        shift),
+    0,
+  );
+}

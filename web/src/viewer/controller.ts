@@ -1,16 +1,13 @@
 import { AssetLoader, type Heatmap } from "../assets/load";
 import { Track } from "../sim/track";
 import { RaceScene } from "../race/scene";
-import { GhostPlayback, snapshotColor, snapshotLabel } from "./playback";
+import { snapshotLabel } from "../watch/timeline";
 import { heatmapScale } from "./heatmap";
 
 const node = <T extends HTMLElement = HTMLElement>(id: string): T =>
   document.getElementById(id) as T;
 export class ViewerController {
-  mode: "race" | "ghosts" = "race";
-  playback: GhostPlayback | null = null;
   private track: Track | null = null;
-  private revision = 0;
   private heatRevision = 0;
   private maps = new Map<string, Promise<Heatmap[]>>();
   constructor(
@@ -27,73 +24,12 @@ export class ViewerController {
         "change",
         () => void this.updateHeatmap(),
       );
-    node("playback-play").addEventListener("click", () => {
-      if (this.playback?.playing) this.playback.pause();
-      else this.playback?.play();
-      this.update();
-    });
-    node("playback-restart").addEventListener("click", () => {
-      this.playback?.restart();
-      this.update();
-    });
-    node<HTMLSelectElement>("playback-speed").addEventListener(
-      "change",
-      (event) =>
-        this.playback?.setRate(
-          Number((event.target as HTMLSelectElement).value),
-        ),
-    );
-    node<HTMLInputElement>("playback-seek").addEventListener(
-      "input",
-      (event) => {
-        this.playback?.seek(Number((event.target as HTMLInputElement).value));
-        this.update();
-      },
-    );
     this.updateSnapshotLabel();
   }
   async setTrack(track: Track): Promise<void> {
     this.track = track;
-    this.revision++;
     this.heatRevision++;
     this.scene.setHeatmap(null, false, false, { visits: 0, crashes: 0 });
-    this.playback?.pause();
-    this.playback = null;
-    if (this.mode === "ghosts") {
-      const revision = this.revision;
-      const runs = await Promise.all(
-        this.loader.manifest.snapshots.map(async (snapshot) => ({
-          snapshot,
-          ...(await this.loader.replay(snapshot, track.data.id)),
-        })),
-      );
-      if (this.revision !== revision) return;
-      this.playback = new GhostPlayback(runs);
-      this.playback.setRate(
-        Number(node<HTMLSelectElement>("playback-speed").value),
-      );
-      this.scene.setGhosts(runs);
-      node<HTMLInputElement>("playback-seek").max = String(
-        this.playback.duration,
-      );
-      const legend = node("ghost-lineup");
-      legend.replaceChildren();
-      runs.forEach((run, index) => {
-        const row = document.createElement("div"),
-          name = document.createElement("strong"),
-          status = document.createElement("span");
-        row.style.setProperty(
-          "--ghost-color",
-          `#${snapshotColor(index, runs.length).toString(16).padStart(6, "0")}`,
-        );
-        name.textContent = snapshotLabel(run.snapshot);
-        name.title = `${run.snapshot.step.toLocaleString("en-US")} training steps`;
-        status.dataset.ghostStatus = run.snapshot.id;
-        row.append(name, status);
-        legend.append(row);
-      });
-      this.update();
-    }
     void this.updateHeatmap();
   }
   private updateSnapshotLabel(): void {
@@ -144,39 +80,5 @@ export class ViewerController {
         this.notify(error instanceof Error ? error.message : String(error));
       }
     }
-  }
-  update(): void {
-    const p = this.playback;
-    if (!p) return;
-    const text = (id: string, value: string): void => {
-      const target = node(id);
-      if (target.textContent !== value) target.textContent = value;
-    };
-    text("playback-play", p.playing ? "Pause" : "Play");
-    node("playback-play").setAttribute("aria-pressed", String(p.playing));
-    const elapsed = `${p.seconds.toFixed(1)} / ${p.duration.toFixed(1)} s`;
-    text("playback-time", elapsed);
-    const seek = node<HTMLInputElement>("playback-seek");
-    const position = String(Number(p.seconds.toFixed(1)));
-    if (seek.value !== position) seek.value = position;
-    seek.setAttribute(
-      "aria-valuetext",
-      `${p.seconds.toFixed(1)} seconds of ${p.duration.toFixed(1)}`,
-    );
-    for (const pose of p.poses()) {
-      const status = node("ghost-lineup").querySelector<HTMLElement>(
-        `[data-ghost-status="${CSS.escape(pose.run.snapshot.id)}"]`,
-      );
-      const label =
-        pose.status === "timeout" ? "TIME LIMIT" : pose.status.toUpperCase();
-      if (status && status.textContent !== label) status.textContent = label;
-    }
-  }
-  advance(seconds: number): void {
-    this.playback?.advance(seconds);
-  }
-  pause(): void {
-    this.playback?.pause();
-    this.update();
   }
 }

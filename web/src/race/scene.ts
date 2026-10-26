@@ -1,12 +1,5 @@
 import type { AttemptRun, WatchTimeline } from "../watch/timeline";
-import {
-  Application,
-  Container,
-  Graphics,
-  Sprite,
-  Texture,
-  Text,
-} from "pixi.js";
+import { Application, Container, Graphics, Sprite, Texture } from "pixi.js";
 import type { CarState, Vec2 } from "../sim/types";
 import { cameraZoom, kerbStripes, gateOrdinals } from "./stadium";
 import { speed } from "../sim/physics";
@@ -16,12 +9,7 @@ import { interpolate, type RaceEngine } from "./engine";
 import { visualConfig } from "../viewer/visual-config";
 import type { Heatmap } from "../assets/load";
 import { heatmapPixels, type HeatmapScale } from "../viewer/heatmap";
-import {
-  GhostPlayback,
-  snapshotColor,
-  snapshotLabel,
-  type GhostRun,
-} from "../viewer/playback";
+import { snapshotColor } from "../watch/timeline";
 
 import { formulaCar, LIVERIES, CAR_PIXELS_PER_METER } from "./car";
 const line = (
@@ -52,9 +40,6 @@ export class RaceScene {
   private attemptCars: Sprite[] = [];
   private partialTrail = new Graphics();
   private partialKey = "";
-  private fleet = new Container();
-  private fleetLeaders = new Graphics();
-  private fleetCars: { car: Container; label: Text }[] = [];
   private particles = new Graphics();
   private sensors = new Graphics();
   showSensors = false;
@@ -81,8 +66,7 @@ export class RaceScene {
   private dirty = true;
   private slowFrames = 0;
   private frameSeconds = 1 / 60;
-  private lastView: "race" | "ghosts" | null = null;
-  private lastGhostSeconds = -1;
+  private lastView: "race" | null = null;
   private lastSensors = false;
   private observer: ResizeObserver;
   private motion = matchMedia("(prefers-reduced-motion: reduce)");
@@ -133,7 +117,6 @@ export class RaceScene {
       this.marks,
       this.particles,
       this.sensors,
-      this.fleet,
       this.attempts,
       this.ghost,
       this.ai,
@@ -291,7 +274,6 @@ export class RaceScene {
     this.attempts.visible = false;
     this.player.visible = this.playerVisible;
     this.ai.visible = true;
-    this.fleet.visible = false;
     const player = interpolate(
         engine.previousPlayer,
         engine.player.state,
@@ -449,6 +431,7 @@ export class RaceScene {
     });
   }
   setAttempts(runs: AttemptRun[]): void {
+    this.player.visible = this.ai.visible = this.ghost.visible = false;
     this.attempts.removeChildren().forEach((child) => child.destroy());
     this.attemptRuns = runs;
     this.attemptCars = [];
@@ -488,11 +471,7 @@ export class RaceScene {
   }
   renderAttempt(timeline: WatchTimeline): void {
     if (!this.track) return;
-    this.player.visible =
-      this.ai.visible =
-      this.ghost.visible =
-      this.fleet.visible =
-        false;
+    this.player.visible = this.ai.visible = this.ghost.visible = false;
     this.attempts.visible = true;
     this.particles.clear();
     this.sensors.clear();
@@ -524,120 +503,14 @@ export class RaceScene {
       car.position.set(current.frame[0], -current.frame[1]);
       car.rotation = -current.frame[2];
       car.scale.set(
-        Math.max(1, visualConfig.ghost.minimumPixelsPerMeter / zoom) /
+        Math.max(1, visualConfig.watch.minimumPixelsPerMeter / zoom) /
           CAR_PIXELS_PER_METER,
       );
     });
     this.app.render();
-    // Invalidate legacy view caches when switching back from Watch.
+    // Invalidate the race render cache when drawing a Watch frame.
     this.lastView = null;
     this.dirty = false;
-  }
-  setGhosts(runs: GhostRun[]): void {
-    this.dirty = true;
-    this.fleet.removeChildren().forEach((child) => child.destroy());
-    this.fleetCars = [];
-    this.fleetLeaders = new Graphics();
-    this.fleet.addChild(this.fleetLeaders);
-    runs.forEach((run, index) => {
-      const color = snapshotColor(index, runs.length),
-        sprite = formulaCar(
-          {
-            ...LIVERIES.ai,
-            body: color,
-            light: color,
-            number: String(index + 1),
-          },
-          this.app.renderer,
-        );
-      sprite.alpha = 0.68;
-      const label = new Text({
-        text: snapshotLabel(run.snapshot),
-        style: {
-          fontFamily: "IBM Plex Mono",
-          fontSize: visualConfig.ghost.labelSize,
-          fill: color,
-          fontWeight: "500",
-        },
-      });
-      this.fleet.addChild(sprite, label);
-      this.fleetCars.push({ car: sprite, label });
-    });
-  }
-  renderGhosts(playback: GhostPlayback): void {
-    if (!this.track) return;
-    if (
-      !this.dirty &&
-      this.lastView === "ghosts" &&
-      this.lastGhostSeconds === playback.seconds
-    )
-      return;
-    this.player.visible = false;
-    this.ai.visible = false;
-    this.ghost.visible = false;
-    this.attempts.visible = false;
-    this.fleet.visible = true;
-    this.particles.clear();
-    this.sensors.clear();
-    const bounds = this.bounds(),
-      zoom = this.fitZoom();
-    this.world.pivot.set(bounds.x, bounds.y);
-    this.world.position.set(
-      this.host.clientWidth / 2,
-      this.host.clientHeight * 0.53,
-    );
-    this.world.scale.set(zoom);
-    this.camera = { x: bounds.x, y: bounds.y, zoom };
-    const occupied: { x: number; y: number; width: number; height: number }[] =
-      [];
-    this.fleetLeaders.clear();
-    playback.poses().forEach((pose, index) => {
-      const { car, label } = this.fleetCars[index],
-        x = pose.frame[0],
-        y = -pose.frame[1];
-      car.scale.set(
-        Math.max(1, visualConfig.ghost.minimumPixelsPerMeter / zoom) /
-          CAR_PIXELS_PER_METER,
-      );
-      car.position.set(x, y);
-      car.rotation = -pose.frame[2];
-      label.scale.set(1 / zoom);
-      const box = {
-        x: x + 8 / zoom,
-        y: y - 18 / zoom,
-        width: 95 / zoom,
-        height: 15 / zoom,
-      };
-      const right = bounds.x + this.host.clientWidth / (2 * zoom) - 8 / zoom;
-      if (box.x + box.width > right) box.x = x - 103 / zoom;
-      const nearTop =
-        (y - bounds.y) * zoom + this.host.clientHeight * 0.53 < 110;
-      if (nearTop) box.y = y + 6 / zoom;
-      while (
-        occupied.some(
-          (other) =>
-            box.x < other.x + other.width &&
-            box.x + box.width > other.x &&
-            box.y < other.y + other.height &&
-            box.y + box.height > other.y,
-        )
-      )
-        box.y += (nearTop ? 16 : -16) / zoom;
-      occupied.push(box);
-      label.position.set(box.x, box.y);
-      this.fleetLeaders
-        .moveTo(x, y)
-        .lineTo(box.x, box.y + 12 / zoom)
-        .stroke({
-          color: snapshotColor(index, playback.runs.length),
-          width: 0.7 / zoom,
-          alpha: 0.45,
-        });
-    });
-    this.app.render();
-    this.dirty = false;
-    this.lastView = "ghosts";
-    this.lastGhostSeconds = playback.seconds;
   }
   private drift(engine: RaceEngine, seconds: number): void {
     const active = engine.phase === "racing",

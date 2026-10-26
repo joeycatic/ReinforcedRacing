@@ -27,8 +27,8 @@ export const visualConfig = {
     particleVelocity: 1.5,
     markWidth: 0.25,
   },
-  ghost: { minimumPixelsPerMeter: 3.2, labelSize: 11 },
   watch: {
+    minimumPixelsPerMeter: 3.2,
     trailAlpha: 0.45,
     trailWidth: 0.35,
     trailEveryTicks: 6,

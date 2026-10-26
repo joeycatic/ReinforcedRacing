@@ -38,9 +38,6 @@ test("production site works under a GitHub Pages repository prefix with local as
   await page.waitForTimeout(900);
   await page.keyboard.up("ArrowUp");
   expect(Number(await page.locator("#speed").innerText())).toBeGreaterThan(0);
-  await page.locator("#mode-ghosts").click();
-  await expect(page.locator("#system-status")).toHaveText("GHOSTS READY");
-  await expect(page.locator("#ghost-lineup>div")).toHaveCount(6);
   await page.locator("#visits-toggle").check();
   await page.locator("#crashes-toggle").check();
   await expect(page.locator("#heatmap-summary")).toContainText(
@@ -51,9 +48,10 @@ test("production site works under a GitHub Pages repository prefix with local as
   await expect(page.locator("#heatmap-summary")).toContainText(
     "50 runs · 50 crashes",
   );
-  await page.locator("#playback-play").click();
-  await page.waitForTimeout(200);
-  await expect(page.locator("#race-state")).toHaveText("REPLAY PLAYING");
+  await page.goto("/racing-rl/watch.html");
+  await expect(page.locator("#attempt-kicker")).toContainText("ATTEMPT 1 / 10");
+  await page.locator("#watch-skip").click();
+  await expect(page.locator("#attempt-outcome")).toHaveText(/LAP \d+\.\d\d s/);
   await page.screenshot({
     path: "test-results/m6-production.png",
     fullPage: true,

@@ -1,0 +1,83 @@
+run_dir: artifacts/training/m3-seed2
+tracks:
+  sweep:
+  - step: 0
+    source: '0'
+    headline: Untrained policy
+  - step: 327680
+    source: checkpoint
+    headline: null
+  - step: 491520
+    source: checkpoint
+    headline: null
+  - step: 983040
+    source: checkpoint
+    headline: null
+  - step: 1146880
+    source: checkpoint
+    headline: Almost a lap
+  - step: 1310720
+    source: checkpoint
+    headline: First full lap
+  - step: 1474560
+    source: checkpoint
+    headline: null
+  - step: 3112960
+    source: checkpoint
+    headline: null
+  - step: 3604480
+    source: checkpoint
+    headline: null
+  - step: 6012928
+    source: final
+    headline: Final policy
+  ribbon:
+  - step: 0
+    source: '0'
+    headline: Untrained policy
+  - step: 163840
+    source: checkpoint
+    headline: null
+  - step: 1146880
+    source: checkpoint
+    headline: Around the hairpin
+  - step: 1310720
+    source: checkpoint
+    headline: First full lap
+  - step: 1474560
+    source: checkpoint
+    headline: null
+  - step: 4259840
+    source: checkpoint
+    headline: null
+  - step: 6012928
+    source: final
+    headline: Final policy
+  technical:
+  - step: 0
+    source: '0'
+    headline: Untrained policy
+  - step: 163840
+    source: checkpoint
+    headline: null
+  - step: 655360
+    source: checkpoint
+    headline: null
+  - step: 819200
+    source: checkpoint
+    headline: null
+  - step: 983040
+    source: checkpoint
+    headline: Past the chicane
+  - step: 1638400
+    source: checkpoint
+    headline: First full lap
+  - step: 3768320
+    source: checkpoint
+    headline: null
+  - step: 4587520
+    source: checkpoint
+    headline: null
+  - step: 6012928
+    source: final
+    headline: Final policy

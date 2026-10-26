@@ -43,3 +43,7 @@ web-build:
 .PHONY: medals
 medals:
 	$(UV) run --locked python -m tools.select_medals $(ARGS)
+
+.PHONY: attempts
+attempts:
+	$(UV) run --locked python -m tools.select_attempts $(ARGS)

@@ -1,0 +1,28 @@
+# SI units. Positive steering/heading turns left in a y-up world.
+dt: 0.016666666666666666
+action_repeat: 2
+mass: 1000.0
+inertia: 1600.0
+front_axle: 1.2
+rear_axle: 1.4
+car_length: 4.2
+car_width: 1.8
+gravity: 9.81
+front_stiffness: 65000.0
+rear_stiffness: 60000.0
+front_mu: 1.45
+rear_mu: 1.35
+max_steer: 0.6
+steer_speed_falloff: 45.0
+steer_rate: 2.5
+# Regularize slip at walking speed; avoids unstable tire forces at rest.
+slip_speed_floor: 5.0
+engine_force: 11500.0
+engine_speed_falloff: 80.0
+brake_force: 16000.0
+drag: 1.05
+rolling_resistance: 150.0
+reverse_force: 3500.0
+reverse_threshold: 0.5
+max_reverse_speed: 5.0
+respawn_delay: 0.5

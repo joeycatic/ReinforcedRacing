@@ -1,0 +1,35 @@
+generation:
+  min_control_points: 10
+  max_control_points: 16
+  radius: 100.0
+  radius_noise: 0.24
+  angle_jitter: 0.18
+  aspect_ratio: 1.0
+  min_width: 10.0
+  max_width: 14.0
+  spline_samples_per_span: 40
+  sample_spacing: 1.0
+  checkpoint_spacing: 25.0
+  max_curvature: 0.10
+  max_attempts: 100
+  projection_window: 24
+  wrong_way_min_delta: 0.001
+showcase:
+  - id: sweep
+    name: Broad Sweep
+    seed: 17
+    radius: 130.0
+    radius_noise: 0.12
+    aspect_ratio: 1.0
+  - id: ribbon
+    name: Long Ribbon
+    seed: 73
+    radius: 95.0
+    radius_noise: 0.22
+    aspect_ratio: 1.6
+  - id: technical
+    name: Technical Loop
+    seed: 211
+    radius: 75.0
+    radius_noise: 0.34
+    aspect_ratio: 1.1

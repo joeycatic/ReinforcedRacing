@@ -1,13 +1,14 @@
 # Racing RL
 
 A deterministic 2D racing simulation with arcade bicycle physics and seeded tracks.
-**M1–M3 are implemented:** manual driving, seeded tracks, lap timing, track JSON,
-scalar/native batched environments, and PPO from scratch with checkpoints and evaluation.
-See [spec.md](spec.md) for the later export and browser milestones.
+**M1–M4 are implemented:** manual driving, seeded tracks, lap timing, batched RL
+environments, PPO from scratch, replay/heatmap recording, ONNX export and browser
+simulation parity. See [spec.md](spec.md) for the remaining browser milestones.
 
 ## Run
 
-Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then:
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/) and Node.js 22+
+(with npm), then:
 
 ```sh
 make setup
@@ -50,7 +51,7 @@ make test
 make drive ARGS="--headless --steps 600 --screenshot artifacts/m1-drive.png"
 ```
 
-`make test` checks Ruff lint/format and runs pytest, including track rejection and
+`make test` checks Ruff lint/format, pytest, TypeScript types and Vitest, including track rejection and
 serialization, progress in both directions, interpolated lap timing, crash/respawn,
 determinism, tire saturation and recovery, complete driven laps on all showcases,
 and a headless pygame smoke check. The headless CLI uses scripted controls and SDL's
@@ -187,7 +188,8 @@ update. Full training stops at a rollout boundary and can slightly exceed the bu
 ## Evaluate policies
 
 ```sh
-make eval
+make eval                                # M4: all snapshots, replays and heatmaps
+make eval ARGS="--run-dir artifacts/training/my-run"
 make eval ARGS="--checkpoint artifacts/training/my-run/latest.pt --runs 5"
 make eval ARGS="--checkpoint artifacts/training/my-run/latest.pt --deterministic --runs 1"
 make eval ARGS="--checkpoint artifacts/training/my-run/latest.pt --snapshots --runs 5"
@@ -200,7 +202,7 @@ sample the Gaussian policy; `--deterministic` uses its mean, as the eventual bro
 opponent will. Each trial starts from rest at the start line and stops at its first
 completed lap, crash, or the configured step limit. It never trains on held-out tracks
 or updates running statistics. A timeout counts as an unsuccessful lap; lap times only
-summarize successful trials. Replay/heatmap production and ONNX export remain M4 work.
+summarize successful trials. The default M4 pipeline also records deterministic ghosts and stochastic heatmaps; explicit `--checkpoint` commands retain the summary-only evaluator.
 
 The measured reference runs started with the saved 3M-step baseline configurations
 and resumed to 6M after diagnosing insufficient training on the larger pool. To
@@ -233,6 +235,35 @@ make eval ARGS="--checkpoint artifacts/training/m3-seed2/latest.pt --showcase-on
 make eval ARGS="--checkpoint artifacts/training/m3-seed2/latest.pt --runs 5"
 ```
 
+## Export models and browser data (M4)
+
+Requires Node.js 22+ and npm in addition to Python/uv. `make setup` installs both
+locked dependency sets. The default source is the retained, validated seed-2 run;
+for a clean checkout, train a complete run first and pass its directory.
+
+```sh
+make setup
+make eval                                # all six snapshots; can take several minutes
+make export                              # verified cache reuse, ONNX + static bundle
+make export ARGS="--run-dir artifacts/training/my-run"
+make parity                              # regenerate committed Python truth fixtures
+make test                                # Python + TypeScript parity and asset checks
+```
+
+Export produces `web/public/assets/manifest.json`, simulation settings, three tracks,
+six ONNX policies, 18 quantized/delta ghosts, and 18 sparse heatmaps (50 stochastic
+runs each). Every asset has a size/hash descriptor, and the loader rejects incompatible
+physics/obs/track/replay/heatmap versions before fetching dependent files. The bundle
+is self-contained. Generated models/evaluations/bundles are ignored; preserve the
+training checkpoints to rebuild them. The full browser UI arrives in M5.
+
+ONNX accepts raw float64 `[batch,22]` observations and includes frozen normalization.
+It returns float32 policy means and critic values. Export checks both against PyTorch
+at ≤1e-5, including single-car batches. Each showcase fixture tests 600 ticks of
+float64 TypeScript physics/observations and integrated crash/respawn sessions at ≤1e-6.
+See [docs/ASSETS.md](docs/ASSETS.md) for schemas, replay decoding, heatmap conventions,
+cache integrity, parity coverage and limitations.
+
 ## Code and data
 
 | Location | Responsibility |
@@ -250,7 +281,11 @@ make eval ARGS="--checkpoint artifacts/training/m3-seed2/latest.pt --runs 5"
 | `tools/benchmark.py` | Full-transition CPU throughput measurement |
 | `train/config.py`, `configs/ppo.yaml` | Typed PPO, normalization, curriculum and snapshot settings |
 | `train/ppo.py` | Single-file PPO, logging, checkpoint/resume and curriculum loop |
-| `eval/evaluate.py` | Frozen-policy lap-completion and timing evaluation |
+| `eval/evaluate.py`, `eval/artifacts.py` | Frozen-policy evaluation and verified snapshot pipeline |
+| `eval/record.py`, `eval/formats.py` | Per-tick recording, quantized ghosts and sparse heatmaps |
+| `export/onnx.py`, `export/assets.py` | Normalized ONNX policy graphs and versioned static packaging |
+| `web/src/sim/`, `web/src/assets/` | Float64 browser simulation and strict asset loaders |
+| `tools/generate_parity.py`, `tests/fixtures/parity/` | Python truth for 600-tick Vitest parity checks |
 
 Simulation uses SI units, positive-left steering and a y-up world. Physics advances at
 1/60 s with semi-implicit Euler; controls update every two ticks. Rendering and wall
@@ -269,9 +304,12 @@ The future browser should load this geometry instead of regenerating it.
 
 ## Scope and open issues
 
-M4–M6 are intentionally unimplemented: replay/heatmap assets, ONNX, TypeScript parity,
-and the browser game. `export`, `web-dev`, and `web-build` exit with an explicit milestone
-message. M1 track export is `make tracks`.
+M1–M4 are implemented. M5's browser race UI/live AI opponent and M6's time-lapse,
+heatmap visualization and polish remain. `web-dev` and `web-build` report this scope
+explicitly; `make export` already produces the static data bundle. M1 track-only
+export remains `make tracks`. Browser inference itself has not yet been integrated.
+The explicit TorchScript ONNX exporter emits a PyTorch deprecation notice; graphs
+are numerically verified with ONNX Runtime before publication.
 
 Automated checks establish the numeric driving targets and recoverable sliding;
 subjective keyboard feel still needs human playtesting. Rendering is deliberately

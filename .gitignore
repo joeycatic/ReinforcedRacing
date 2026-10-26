@@ -4,3 +4,7 @@ __pycache__/
 .ruff_cache/
 *.py[cod]
 artifacts/
+web/node_modules/
+web/public/assets/
+web/public/assets.previous/
+web/public/.assets-*/

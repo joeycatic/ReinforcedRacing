@@ -1,0 +1,121 @@
+"""Assemble and verify a self-contained, versioned static asset directory."""
+
+import shutil
+import tempfile
+from pathlib import Path
+
+import numpy as np
+
+from eval.artifacts import (
+    parse_config,
+    run_evaluation,
+    sha256,
+    simulation_config,
+    snapshot_paths,
+    write_json,
+)
+from eval.config import ExportConfig
+from eval.formats import HEATMAP_VERSION, REPLAY_VERSION
+from export.onnx import export_policy
+from sim import OBS_VERSION, PHYSICS_VERSION, TRACK_VERSION
+from sim.config import ROOT
+from sim.pool import make_track_pool
+from train.ppo import load_checkpoint
+
+VERSIONS = {
+    "physics": PHYSICS_VERSION,
+    "obs": OBS_VERSION,
+    "track": TRACK_VERSION,
+    "replay": REPLAY_VERSION,
+    "heatmap": HEATMAP_VERSION,
+}
+
+
+def descriptor(root: Path, path: Path) -> dict:
+    return {
+        "path": path.relative_to(root).as_posix(),
+        "sha256": sha256(path),
+        "bytes": path.stat().st_size,
+    }
+
+
+def build_assets(config: ExportConfig) -> dict:
+    reports = run_evaluation(config)
+    target = ROOT / config.assets_dir
+    target.parent.mkdir(parents=True, exist_ok=True)
+    # Verify everything in a staging directory before replacing a working bundle.
+    with tempfile.TemporaryDirectory(prefix=".assets-", dir=target.parent) as temporary:
+        stage = Path(temporary)
+        config_path = stage / "simulation.json"
+        write_json(config_path, {"versions": VERSIONS, **simulation_config()})
+        manifest = {
+            "version": "manifest.v1",
+            "versions": VERSIONS,
+            "simulation": descriptor(stage, config_path),
+            "tracks": [],
+            "snapshots": [],
+        }
+        for track in make_track_pool("showcase").tracks:
+            path = stage / "tracks" / f"{track.id}.track.v1.json"
+            track.save(path)
+            manifest["tracks"].append(
+                {"id": track.id, "name": track.name, **descriptor(stage, path)}
+            )
+        rng = np.random.default_rng(config.seed)
+        samples = rng.uniform(-1, 1, (config.onnx_validation_samples, 22))
+        samples[:3] = [np.zeros(22), np.ones(22), -np.ones(22)]
+        for path, report in zip(snapshot_paths(ROOT / config.run_dir), reports, strict=True):
+            checkpoint = load_checkpoint(path)
+            if checkpoint["source_sha256"] != report["checkpoint_sha256"]:
+                raise ValueError(f"Checkpoint changed after evaluation: {path}")
+            model_path = stage / "models" / f"{path.stem}.onnx"
+            verification = export_policy(checkpoint, model_path, config, samples)
+            snapshot = {
+                "id": path.stem,
+                "step": checkpoint["global_step"],
+                "checkpoint_sha256": checkpoint["source_sha256"],
+                "model": descriptor(stage, model_path),
+                "onnx_validation": verification,
+                "replays": {},
+                "heatmaps": {},
+            }
+            for track in manifest["tracks"]:
+                for kind in ("replay", "heatmap"):
+                    name = f"{track['id']}.{kind}.v1.json"
+                    source = ROOT / config.evaluation_dir / path.stem / name
+                    if sha256(source) != report["files"][name]:
+                        raise ValueError(f"Evaluation asset changed during export: {source}")
+                    destination = stage / f"{kind}s" / path.stem / name
+                    destination.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copyfile(source, destination)
+                    snapshot[f"{kind}s"][track["id"]] = descriptor(stage, destination)
+            manifest["snapshots"].append(snapshot)
+            print(
+                f"ONNX {path.stem}: action {verification['max_action_error']:.3g}, "
+                f"value {verification['max_value_error']:.3g}",
+                flush=True,
+            )
+        write_json(stage / "manifest.json", manifest)
+        backup = target.with_name(target.name + ".previous")
+        if backup.exists():
+            shutil.rmtree(backup)
+        if target.exists():
+            target.rename(backup)
+        try:
+            stage.rename(target)
+        except OSError:
+            if backup.exists():
+                backup.rename(target)
+            raise
+        if backup.exists():
+            shutil.rmtree(backup)
+    print(f"Exported {target}", flush=True)
+    return manifest
+
+
+def main() -> None:
+    build_assets(parse_config())
+
+
+if __name__ == "__main__":
+    main()

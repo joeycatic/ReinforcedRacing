@@ -1,0 +1,14 @@
+run_dir: artifacts/training/m3-seed2
+evaluation_dir: artifacts/evaluation/m4
+assets_dir: web/public/assets
+seed: 42
+stochastic_runs: 50
+held_out_runs: 5
+heatmap_cell_size: 0.5
+heatmap_margin: 5.0
+position_scale: 100
+heading_scale: 1000
+speed_scale: 100
+action_scale: 10000
+onnx_opset: 17
+onnx_validation_samples: 256

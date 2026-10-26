@@ -1,0 +1,540 @@
+{
+  "milestone": "M4",
+  "versions": {
+    "physics": "physics.v1",
+    "obs": "obs.v1",
+    "track": "track.v1",
+    "replay": "replay.v1",
+    "heatmap": "heatmap.v1"
+  },
+  "manifest_sha256": "dc3bee77129a15fb795ce65f71be03788a48fc548c0d910a742374f8164e6c5a",
+  "asset_files": 47,
+  "bundle_bytes": 5903181,
+  "parity": {
+    "fixtures": 3,
+    "physics_ticks_per_fixture": 600,
+    "progress_probes_per_fixture": 600,
+    "ray_probes_per_fixture": 20,
+    "max_measured_absolute_error": 5.403455460850637e-13,
+    "tolerance": 1e-06,
+    "coverage": "Integrated play sessions; independent free-body physics/observation/projection stress kernels; see docs/ASSETS.md for off-road ties."
+  },
+  "snapshots": [
+    {
+      "id": "0",
+      "actual_step": 0,
+      "checkpoint_sha256": "9e6e361db60a91c9e2f6aebf7688a4d262c145c0bb67d54123e07fd6bdef143e",
+      "onnx_validation": {
+        "samples": 256,
+        "batch_sizes": [
+          1,
+          17,
+          256
+        ],
+        "max_action_error": 6.51925802230835e-09,
+        "max_value_error": 9.5367431640625e-07,
+        "tolerance": 1e-05,
+        "input_dtype": "float64",
+        "outputs": [
+          "action",
+          "value"
+        ]
+      },
+      "showcase": {
+        "episodes": 150,
+        "lap_completion_rate": 0.0,
+        "crash_rate": 1.0,
+        "mean_lap_time": null,
+        "best_lap_time": null,
+        "mean_progress": 42.580664074859186
+      },
+      "held_out": {
+        "episodes": 250,
+        "lap_completion_rate": 0.0,
+        "crash_rate": 1.0,
+        "mean_lap_time": null,
+        "best_lap_time": null,
+        "mean_progress": 38.31264819039979
+      },
+      "deterministic_showcase": {
+        "episodes": 3,
+        "lap_completion_rate": 0.0,
+        "crash_rate": 0.3333333333333333,
+        "mean_lap_time": null,
+        "best_lap_time": null,
+        "mean_progress": 27.058466885730752
+      },
+      "assets": {
+        "model": {
+          "path": "models/0.onnx",
+          "sha256": "5b68cadbe7f68c8521f8179fd243eeafff01e1a726eaf5aee74467d9a05693fe",
+          "bytes": 576675
+        },
+        "replays": {
+          "sweep": {
+            "path": "replays/0/sweep.replay.v1.json",
+            "sha256": "44a2cf8c956264f4feb811f2d7778f1f0a9bf2f151f15c05f2108ec6e6bc5d7c",
+            "bytes": 169508
+          },
+          "ribbon": {
+            "path": "replays/0/ribbon.replay.v1.json",
+            "sha256": "e995f006a9d717afbb5f08d5afbe169b7623f4321d56e53d0f0e4577a15f4089",
+            "bytes": 169057
+          },
+          "technical": {
+            "path": "replays/0/technical.replay.v1.json",
+            "sha256": "a11ef72fe01343f0a28f58293307a8cb037239d1dd9f91664c03745e5024f955",
+            "bytes": 24296
+          }
+        },
+        "heatmaps": {
+          "sweep": {
+            "path": "heatmaps/0/sweep.heatmap.v1.json",
+            "sha256": "ad14821742a09878ddc24df6578b3291dde0add6790ebf719b0c00a53986b924",
+            "bytes": 36127
+          },
+          "ribbon": {
+            "path": "heatmaps/0/ribbon.heatmap.v1.json",
+            "sha256": "c4b14581b3bfc83a7318431404fe4227f9d5927653651a3158ae82cd73c4c5ce",
+            "bytes": 31623
+          },
+          "technical": {
+            "path": "heatmaps/0/technical.heatmap.v1.json",
+            "sha256": "7e8b711d4efc4a7d4b6414a1c52e2a36d4c4b90c2777e332a9f4317a74a8a759",
+            "bytes": 23055
+          }
+        }
+      }
+    },
+    {
+      "id": "50000",
+      "actual_step": 50048,
+      "checkpoint_sha256": "999710c2ef12945335816eea03b60299715bb9371aeec6c77d2bcd99b8e07dae",
+      "onnx_validation": {
+        "samples": 256,
+        "batch_sizes": [
+          1,
+          17,
+          256
+        ],
+        "max_action_error": 1.1920928955078125e-07,
+        "max_value_error": 9.5367431640625e-07,
+        "tolerance": 1e-05,
+        "input_dtype": "float64",
+        "outputs": [
+          "action",
+          "value"
+        ]
+      },
+      "showcase": {
+        "episodes": 150,
+        "lap_completion_rate": 0.0,
+        "crash_rate": 0.84,
+        "mean_lap_time": null,
+        "best_lap_time": null,
+        "mean_progress": 57.47772472964675
+      },
+      "held_out": {
+        "episodes": 250,
+        "lap_completion_rate": 0.0,
+        "crash_rate": 0.864,
+        "mean_lap_time": null,
+        "best_lap_time": null,
+        "mean_progress": 42.83213182108064
+      },
+      "deterministic_showcase": {
+        "episodes": 3,
+        "lap_completion_rate": 0.0,
+        "crash_rate": 0.6666666666666666,
+        "mean_lap_time": null,
+        "best_lap_time": null,
+        "mean_progress": -8.054927407757
+      },
+      "assets": {
+        "model": {
+          "path": "models/50000.onnx",
+          "sha256": "3ccba14ea29f17a2e5a7dbeb72cd20d40f43b2c2d92ea1865a98c95b5f0f60cf",
+          "bytes": 579652
+        },
+        "replays": {
+          "sweep": {
+            "path": "replays/50000/sweep.replay.v1.json",
+            "sha256": "a607d0c746cac9ca1cc283e6ba6a205da3a2328284101be79bfae4746b09b7be",
+            "bytes": 11617
+          },
+          "ribbon": {
+            "path": "replays/50000/ribbon.replay.v1.json",
+            "sha256": "b07e3687b974831be86cd1e8a52528fa3903885f33b7d9241777aed555689f72",
+            "bytes": 11140
+          },
+          "technical": {
+            "path": "replays/50000/technical.replay.v1.json",
+            "sha256": "75c81c23490b65a42e92626deb526e794d678bb1e9e7d2ce16dac0500284d321",
+            "bytes": 173050
+          }
+        },
+        "heatmaps": {
+          "sweep": {
+            "path": "heatmaps/50000/sweep.heatmap.v1.json",
+            "sha256": "11dcfeebd2ae20878cdfd1c06305a6c5abe29feb4008cf6b317a433671a4f57f",
+            "bytes": 35354
+          },
+          "ribbon": {
+            "path": "heatmaps/50000/ribbon.heatmap.v1.json",
+            "sha256": "3b9b58665192bd3052a6cfe6459e831e0b19bdcb31903573e793239d9dff46c5",
+            "bytes": 58371
+          },
+          "technical": {
+            "path": "heatmaps/50000/technical.heatmap.v1.json",
+            "sha256": "ae19241da6a92f5a95bea41e6015aa7bd31d32f7a753fa9a6eb83873e36ff592",
+            "bytes": 24922
+          }
+        }
+      }
+    },
+    {
+      "id": "200000",
+      "actual_step": 200000,
+      "checkpoint_sha256": "513a0e2acb38bef5346b66eabf9fbe7bc1d4e8b11c902a94306ad058b5ec0fca",
+      "onnx_validation": {
+        "samples": 256,
+        "batch_sizes": [
+          1,
+          17,
+          256
+        ],
+        "max_action_error": 3.5762786865234375e-07,
+        "max_value_error": 1.6689300537109375e-06,
+        "tolerance": 1e-05,
+        "input_dtype": "float64",
+        "outputs": [
+          "action",
+          "value"
+        ]
+      },
+      "showcase": {
+        "episodes": 150,
+        "lap_completion_rate": 0.0,
+        "crash_rate": 0.9666666666666667,
+        "mean_lap_time": null,
+        "best_lap_time": null,
+        "mean_progress": 107.89940005079528
+      },
+      "held_out": {
+        "episodes": 250,
+        "lap_completion_rate": 0.0,
+        "crash_rate": 0.992,
+        "mean_lap_time": null,
+        "best_lap_time": null,
+        "mean_progress": 99.78481191383314
+      },
+      "deterministic_showcase": {
+        "episodes": 3,
+        "lap_completion_rate": 0.0,
+        "crash_rate": 1.0,
+        "mean_lap_time": null,
+        "best_lap_time": null,
+        "mean_progress": 102.32059322451686
+      },
+      "assets": {
+        "model": {
+          "path": "models/200000.onnx",
+          "sha256": "b94d2a00fb9dd2d02df4beff0441901d3795a508bb8d946fc3ecf0d662391e9a",
+          "bytes": 579653
+        },
+        "replays": {
+          "sweep": {
+            "path": "replays/200000/sweep.replay.v1.json",
+            "sha256": "8d700dcbd8b79921ba9e5e64e10a028845666bca97917b4fd5628d22c666729b",
+            "bytes": 18164
+          },
+          "ribbon": {
+            "path": "replays/200000/ribbon.replay.v1.json",
+            "sha256": "8b93807de03a329c1dee2ba7c5cb92e5386017cd41ef75ce1abf190748104efb",
+            "bytes": 10658
+          },
+          "technical": {
+            "path": "replays/200000/technical.replay.v1.json",
+            "sha256": "58a56bdf911d65f46972cdc577fcadb32cf1b9076a409d628a45ec0d98811871",
+            "bytes": 5591
+          }
+        },
+        "heatmaps": {
+          "sweep": {
+            "path": "heatmaps/200000/sweep.heatmap.v1.json",
+            "sha256": "3eed750a962f679b8e217702a1a00d8fb561d2e5e8fc17e35896ae4c749efa22",
+            "bytes": 90639
+          },
+          "ribbon": {
+            "path": "heatmaps/200000/ribbon.heatmap.v1.json",
+            "sha256": "c1903c034c78f7c7029ed1a24a6ee145f266d3ef5b53acded03481a1ec774d6b",
+            "bytes": 84657
+          },
+          "technical": {
+            "path": "heatmaps/200000/technical.heatmap.v1.json",
+            "sha256": "00de108b0f5b75cd74bfa09ae2ab36aafbef1034d684db5bab117dac32d44f17",
+            "bytes": 47206
+          }
+        }
+      }
+    },
+    {
+      "id": "1000000",
+      "actual_step": 1000000,
+      "checkpoint_sha256": "936513b9f71c28e2ec161e77296b7ab98cba357f510dc114378b337acdf25b8b",
+      "onnx_validation": {
+        "samples": 256,
+        "batch_sizes": [
+          1,
+          17,
+          256
+        ],
+        "max_action_error": 1.1920928955078125e-06,
+        "max_value_error": 1.9073486328125e-06,
+        "tolerance": 1e-05,
+        "input_dtype": "float64",
+        "outputs": [
+          "action",
+          "value"
+        ]
+      },
+      "showcase": {
+        "episodes": 150,
+        "lap_completion_rate": 0.13333333333333333,
+        "crash_rate": 0.86,
+        "mean_lap_time": 24.527650556508593,
+        "best_lap_time": 22.212603977455622,
+        "mean_progress": 506.0841410162191
+      },
+      "held_out": {
+        "episodes": 250,
+        "lap_completion_rate": 0.18,
+        "crash_rate": 0.756,
+        "mean_lap_time": 25.175743963601068,
+        "best_lap_time": 22.33494618608425,
+        "mean_progress": 388.95657441705566
+      },
+      "deterministic_showcase": {
+        "episodes": 3,
+        "lap_completion_rate": 0.0,
+        "crash_rate": 1.0,
+        "mean_lap_time": null,
+        "best_lap_time": null,
+        "mean_progress": 307.15105106665015
+      },
+      "assets": {
+        "model": {
+          "path": "models/1000000.onnx",
+          "sha256": "858d6f92be9f5800cdb89ff37c1b432843ed3e7adab2e72d253c96c14837392d",
+          "bytes": 579654
+        },
+        "replays": {
+          "sweep": {
+            "path": "replays/1000000/sweep.replay.v1.json",
+            "sha256": "89d7dfbc09f386e91bb6e9de8d63294d289bc38803f60db43ddda57679cffd90",
+            "bytes": 15071
+          },
+          "ribbon": {
+            "path": "replays/1000000/ribbon.replay.v1.json",
+            "sha256": "316dcaef130acbda2cd494cd4aa934cd2ab5dd996cb225b3a99fc752ca9f7b67",
+            "bytes": 13255
+          },
+          "technical": {
+            "path": "replays/1000000/technical.replay.v1.json",
+            "sha256": "7f6e7694b5b0c93096e780ad9d5100a1fea858e812c1ad0949d0b793c2d452f7",
+            "bytes": 13816
+          }
+        },
+        "heatmaps": {
+          "sweep": {
+            "path": "heatmaps/1000000/sweep.heatmap.v1.json",
+            "sha256": "67bb64000b105cebd6b5be9a75d733f95661142ce7238db1363c9f469e62c5fc",
+            "bytes": 125384
+          },
+          "ribbon": {
+            "path": "heatmaps/1000000/ribbon.heatmap.v1.json",
+            "sha256": "17177f6e6ee90fa0a5adce66bb89112cdf78f8de11f3d58b40beb845961ddcae",
+            "bytes": 89919
+          },
+          "technical": {
+            "path": "heatmaps/1000000/technical.heatmap.v1.json",
+            "sha256": "c98f3c45bd80203bd4cdc523d75773f0f161992f6253190aff7f051c54dc556e",
+            "bytes": 96656
+          }
+        }
+      }
+    },
+    {
+      "id": "3000000",
+      "actual_step": 3000000,
+      "checkpoint_sha256": "fa434de7146fb38009da073037ae7125754542ba278b838273b7e22597adb179",
+      "onnx_validation": {
+        "samples": 256,
+        "batch_sizes": [
+          1,
+          17,
+          256
+        ],
+        "max_action_error": 1.1920928955078125e-06,
+        "max_value_error": 1.1920928955078125e-06,
+        "tolerance": 1e-05,
+        "input_dtype": "float64",
+        "outputs": [
+          "action",
+          "value"
+        ]
+      },
+      "showcase": {
+        "episodes": 150,
+        "lap_completion_rate": 0.9466666666666667,
+        "crash_rate": 0.03333333333333333,
+        "mean_lap_time": 24.161355011398197,
+        "best_lap_time": 20.585058655473354,
+        "mean_progress": 708.8373128443571
+      },
+      "held_out": {
+        "episodes": 250,
+        "lap_completion_rate": 0.84,
+        "crash_rate": 0.092,
+        "mean_lap_time": 23.678758644253104,
+        "best_lap_time": 20.66910714350955,
+        "mean_progress": 622.6380387345882
+      },
+      "deterministic_showcase": {
+        "episodes": 3,
+        "lap_completion_rate": 0.6666666666666666,
+        "crash_rate": 0.3333333333333333,
+        "mean_lap_time": 25.284755104102974,
+        "best_lap_time": 25.1117696815254,
+        "mean_progress": 579.5385831809127
+      },
+      "assets": {
+        "model": {
+          "path": "models/3000000.onnx",
+          "sha256": "a77b62545c870d8933cb85974c5fc2e2672365c8192e96ac6bbc5333e18cee4d",
+          "bytes": 579654
+        },
+        "replays": {
+          "sweep": {
+            "path": "replays/3000000/sweep.replay.v1.json",
+            "sha256": "1f67d03057cc257cc9514afeb1dddbb58dd8947137c75d9e8d68802a13d71774",
+            "bytes": 30745
+          },
+          "ribbon": {
+            "path": "replays/3000000/ribbon.replay.v1.json",
+            "sha256": "fe0441793a1672368f641c59b2bbe5c68ddd3fb8803a65da26059d1b575b0b2f",
+            "bytes": 31886
+          },
+          "technical": {
+            "path": "replays/3000000/technical.replay.v1.json",
+            "sha256": "6030447205ec77ac0aa4fb9ad6bebbd1e7b48789c6dde37b1060021a1a71b886",
+            "bytes": 7287
+          }
+        },
+        "heatmaps": {
+          "sweep": {
+            "path": "heatmaps/3000000/sweep.heatmap.v1.json",
+            "sha256": "73bc999b5da7bb36fa86ae4b9d978761a97bec0d3a67279db329181bb780fa34",
+            "bytes": 78873
+          },
+          "ribbon": {
+            "path": "heatmaps/3000000/ribbon.heatmap.v1.json",
+            "sha256": "fd0f94ce8dcaa3716aa0e7dd0f7c007c1b01eb37a471c5a06be9a6f4ef2cf10e",
+            "bytes": 93021
+          },
+          "technical": {
+            "path": "heatmaps/3000000/technical.heatmap.v1.json",
+            "sha256": "8328258643c2c55331bb84c080b4d225087b28401a481049432f61edfee58a11",
+            "bytes": 67643
+          }
+        }
+      }
+    },
+    {
+      "id": "final",
+      "actual_step": 6012928,
+      "checkpoint_sha256": "5f247575bc0003fc4abf0a6c41704562ba818e1f8b31f83ddc92ff53011426f3",
+      "onnx_validation": {
+        "samples": 256,
+        "batch_sizes": [
+          1,
+          17,
+          256
+        ],
+        "max_action_error": 1.430511474609375e-06,
+        "max_value_error": 1.3113021850585938e-06,
+        "tolerance": 1e-05,
+        "input_dtype": "float64",
+        "outputs": [
+          "action",
+          "value"
+        ]
+      },
+      "showcase": {
+        "episodes": 150,
+        "lap_completion_rate": 0.9866666666666667,
+        "crash_rate": 0.013333333333333334,
+        "mean_lap_time": 23.215327709750028,
+        "best_lap_time": 19.861753875994268,
+        "mean_progress": 718.7908441325241
+      },
+      "held_out": {
+        "episodes": 250,
+        "lap_completion_rate": 0.852,
+        "crash_rate": 0.128,
+        "mean_lap_time": 22.765065456930724,
+        "best_lap_time": 19.565099218562832,
+        "mean_progress": 632.4524879935817
+      },
+      "deterministic_showcase": {
+        "episodes": 3,
+        "lap_completion_rate": 1.0,
+        "crash_rate": 0.0,
+        "mean_lap_time": 22.883264451895887,
+        "best_lap_time": 19.81237641958874,
+        "mean_progress": 723.7784803288793
+      },
+      "assets": {
+        "model": {
+          "path": "models/final.onnx",
+          "sha256": "a934c317c52bce66bb08f01835ce6bf400f47d5ce8bf827ca8be81af5ede46d4",
+          "bytes": 579654
+        },
+        "replays": {
+          "sweep": {
+            "path": "replays/final/sweep.replay.v1.json",
+            "sha256": "6d2700caa70bf4562083c4c1882b5a227901848372f06864b3d59f13c36310dd",
+            "bytes": 29790
+          },
+          "ribbon": {
+            "path": "replays/final/ribbon.replay.v1.json",
+            "sha256": "142c58b1f0fa7502b89ce414c36de69edc2dc06843d5279ddce26e151b9ca400",
+            "bytes": 30590
+          },
+          "technical": {
+            "path": "replays/final/technical.replay.v1.json",
+            "sha256": "eb548c38705628df2fc2fb8780f31c56fc70174071fe50989310ab46b528351d",
+            "bytes": 24369
+          }
+        },
+        "heatmaps": {
+          "sweep": {
+            "path": "heatmaps/final/sweep.heatmap.v1.json",
+            "sha256": "ac0242e5f772d0ff3fcb19c79aaef7173f99f26f8d0a09d2215a79f9313c8e94",
+            "bytes": 78275
+          },
+          "ribbon": {
+            "path": "heatmaps/final/ribbon.heatmap.v1.json",
+            "sha256": "ac1ab980df6bb581aae8cfd2cdb375b1ee14f902bc8c0898652597e6c40ae18c",
+            "bytes": 70572
+          },
+          "technical": {
+            "path": "heatmaps/final/technical.heatmap.v1.json",
+            "sha256": "0f163b92d36e767502ef11a26c3c13d3a4553fef62cfd611188ea3beeb5b9204",
+            "bytes": 60927
+          }
+        }
+      }
+    }
+  ]
+}

@@ -16,3 +16,20 @@
 - Use an accumulator driven by wall time only in pygame; simulation time is always integer physics ticks, with inputs held for two ticks; cap catch-up after a long UI stall to avoid a spiral of death.
 - Provide `make tracks` for M1 JSON geometry export; required Make targets for future milestones fail explicitly instead of pretending to implement unavailable training, evaluation, model export, or web features.
 - Use NumPy for geometry, PyYAML for typed config loading, pygame for manual driving, pytest for behavior checks, and Ruff for lint/format; pin resolved versions in uv.lock and use Python 3.12 by default (source supports 3.11+).
+
+# M2 decisions
+
+- Implement only the newly authorized M2 and continue deferring browser parity to M4; the existing scalar physics remains unchanged, with 600-tick regression checks against the native NumPy batch implementation.
+- The listed observation components add up to 21 although the spec requires 22; append the existing rate-limited steering actuator as index 21 in `obs.v1` to expose otherwise hidden steering lag while preserving the listed component order.
+- Normalize vx/vy/yaw by 80 m/s, 40 m/s, and 3 rad/s, and curvature by 0.1 m⁻¹; clip normalized values to [-1,1] so Gymnasium's declared observation bounds are reliable, including terminal states.
+- Use the stored tangent at the projected segment index for heading error (tangent minus car heading), and linearly interpolate signed curvature at wrapped lookahead arcs so the layout and signs are explicit for M4.
+- Precompute a uniform 8 m spatial grid of boundary segments and traverse crossed cells exactly with batched DDA; grid construction may loop over static geometry, but physics, projection, rays, checkpoints, and reset updates never loop over individual cars.
+- Keep `RaceEnv` on the scalar M1 session as an independent reference, and subclass Gymnasium VectorEnv for `VecRaceEnv`; both expose float64 spaces, honor two physics ticks per action, and stop at the first tick that crashes or reaches the lap limit.
+- Charge the time reward once per agent step (including an early crash) and log each weighted contribution plus episode totals; crash termination takes precedence over a simultaneous time/lap truncation.
+- Default the episode cap to 6000 agent steps (200 simulation seconds) and two laps in `configs/env.yaml`; no extra stall or wrong-way termination is added beyond the spec.
+- Single-car Gymnasium episodes require explicit reset; vector episodes reset during the finishing step, sampling tracks uniformly with replacement and preserving terminal observations/metrics in final_obs/final_info with boolean masks for correct future PPO bootstrapping.
+- Root vector info describes the transition before autoreset and reset_track_index identifies the next episode's selected track; info/observations are independent snapshots rather than aliases to mutable environment buffers.
+- Use a single seeded NumPy generator for vector track assignments; determinism is defined for the same seed, ordered pool, batch size and action sequence, not across different batch sizes or permutations.
+- Reserve seeds 10000–10199 for the 200 training tracks and 20000–20049 for the 50 held-out tracks, disjoint from showcase seeds; construct pools explicitly once, with the three showcases as the quick default for environment constructors.
+- Benchmark full transitions with 64 cars and 64 generated training tracks, pre-generated held random controls, 100 warmup batches and three 1000-batch samples; exclude one-time geometry/grid setup and include crash autoreset, sensor construction, rewards and info.
+- Add Gymnasium as the only new dependency for M2, because its standard environment contract and checker are explicit milestone requirements; PPO remains unimplemented until M3.

@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 from sim.config import PhysicsConfig, TrackConfig, load_physics, load_tracks
+from sim.pool import TrackPool
 from sim.track import Track, build_track
 
 
@@ -19,3 +20,8 @@ def tracks() -> TrackConfig:
 def circle() -> Track:
     angles = np.linspace(0, 2 * np.pi, 400, endpoint=False)
     return build_track(np.column_stack((60 * np.cos(angles), 60 * np.sin(angles))), 12, 25)
+
+
+@pytest.fixture
+def pool(circle: Track) -> TrackPool:
+    return TrackPool([circle])

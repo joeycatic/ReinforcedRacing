@@ -86,11 +86,88 @@ class ShowcaseConfig:
     aspect_ratio: float
 
 
+@dataclass(frozen=True)
+class ObservationConfig:
+    ray_count: int
+    ray_half_angle_degrees: float
+    ray_max_distance: float
+    grid_cell_size: float
+    longitudinal_speed_scale: float
+    lateral_speed_scale: float
+    yaw_rate_scale: float
+    curvature_scale: float
+    lookahead_meters: tuple[float, ...]
+
+    def __post_init__(self) -> None:
+        for field in fields(self):
+            if field.name != "lookahead_meters":
+                value = getattr(self, field.name)
+                if not _finite_number(value) or value <= 0:
+                    raise ValueError(f"{field.name} must be finite and positive")
+        if (
+            type(self.ray_count) is not int
+            or self.ray_count != 9
+            or len(self.lookahead_meters) != 4
+        ):
+            raise ValueError("obs.v1 requires nine rays and four curvature lookaheads")
+        if not all(_finite_number(value) and value > 0 for value in self.lookahead_meters):
+            raise ValueError("Lookahead distances must be finite and positive")
+        if self.ray_half_angle_degrees > 180:
+            raise ValueError("ray_half_angle_degrees must be <= 180")
+
+
+@dataclass(frozen=True)
+class RewardConfig:
+    progress: float
+    time: float
+    crash: float
+    lap: float
+
+    def __post_init__(self) -> None:
+        if not all(_finite_number(getattr(self, field.name)) for field in fields(self)):
+            raise ValueError("Reward weights must be finite")
+
+
+@dataclass(frozen=True)
+class EnvConfig:
+    max_laps: int
+    max_agent_steps: int
+
+    def __post_init__(self) -> None:
+        for field in fields(self):
+            value = getattr(self, field.name)
+            if type(value) is not int or value <= 0:
+                raise ValueError(f"{field.name} must be a positive integer")
+
+
+@dataclass(frozen=True)
+class PoolConfig:
+    training_seed_start: int
+    training_count: int
+    held_out_seed_start: int
+    held_out_count: int
+
+    def __post_init__(self) -> None:
+        for field in fields(self):
+            value = getattr(self, field.name)
+            if type(value) is not int or value < 0 or ("count" in field.name and value == 0):
+                raise ValueError(f"Invalid pool setting: {field.name}")
+        if max(self.training_seed_start, self.held_out_seed_start) < min(
+            self.training_seed_start + self.training_count,
+            self.held_out_seed_start + self.held_out_count,
+        ):
+            raise ValueError("Training and held-out seed ranges overlap")
+
+
+def _finite_number(value: object) -> bool:
+    return not isinstance(value, bool) and isinstance(value, (float, int)) and isfinite(value)
+
+
 def _positive_fields(config: PhysicsConfig | TrackConfig) -> None:
     nonnegative = {"radius_noise", "angle_jitter", "drag", "rolling_resistance"}
     for field in fields(config):
         value = getattr(config, field.name)
-        if isinstance(value, bool) or not isinstance(value, (float, int)) or not isfinite(value):
+        if not _finite_number(value):
             raise ValueError(f"{field.name} must be a finite number")
         if field.type in (int, "int") and not isinstance(value, int):
             raise ValueError(f"{field.name} must be an integer")
@@ -119,3 +196,32 @@ def load_tracks(
     if len({item.id for item in showcase}) != len(showcase):
         raise ValueError("Showcase track ids must be unique")
     return config, showcase
+
+
+def load_observation(path: Path = ROOT / "configs/observation.yaml") -> ObservationConfig:
+    data = _read_yaml(path)
+    data["lookahead_meters"] = tuple(data["lookahead_meters"])
+    return ObservationConfig(**data)
+
+
+def load_reward(path: Path = ROOT / "configs/reward.yaml") -> RewardConfig:
+    return RewardConfig(**_read_yaml(path))
+
+
+def load_env(path: Path = ROOT / "configs/env.yaml") -> EnvConfig:
+    return EnvConfig(**_read_yaml(path))
+
+
+def load_pool_config(path: Path = ROOT / "configs/tracks.yaml") -> PoolConfig:
+    data = _read_yaml(path)
+    config = PoolConfig(**data["pools"])
+    for item in data["showcase"]:
+        seed = item["seed"]
+        if (
+            config.training_seed_start <= seed < config.training_seed_start + config.training_count
+            or config.held_out_seed_start
+            <= seed
+            < config.held_out_seed_start + config.held_out_count
+        ):
+            raise ValueError("Showcase seeds must be separate from generated pools")
+    return config

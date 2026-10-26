@@ -10,7 +10,10 @@ alongside the six rigid-body coordinates for deterministic continuation.
 from dataclasses import dataclass
 from math import atan2, copysign, cos, hypot, isfinite, sin
 
+import numpy as np
+
 from sim.config import PhysicsConfig
+from sim.geometry import FloatArray
 
 
 def clamp(value: float, low: float, high: float) -> float:
@@ -111,4 +114,63 @@ def step(state: CarState, action: Action, config: PhysicsConfig) -> CarState:
         vy,
         r,
         steering,
+    )
+
+
+def step_batch(states: FloatArray, actions: FloatArray, config: PhysicsConfig) -> FloatArray:
+    """Native NumPy version of step, over (N,7) states and (N,2) actions.
+
+    Columns are x, y, psi, vx, vy, r, steering. Mirrors the scalar equations
+    and operation order; no Python loop over cars and no changes to car feel.
+    """
+    c = config
+    x, y, psi, old_vx, old_vy, old_r, old_steering = states.T
+    speed = np.hypot(old_vx, old_vy)
+    requested = np.clip(actions[:, 0], -1.0, 1.0)
+    steering = old_steering + np.clip(
+        requested - old_steering, -c.steer_rate * c.dt, c.steer_rate * c.dt
+    )
+    angle = steering * c.max_steer / (1.0 + speed / c.steer_speed_falloff)
+    sine, cosine = np.sin(angle), np.cos(angle)
+    front_lateral = old_vy + c.front_axle * old_r
+    front_wheel_x = old_vx * cosine + front_lateral * sine
+    front_wheel_y = front_lateral * cosine - old_vx * sine
+    front_slip = np.arctan2(front_wheel_y, np.maximum(np.abs(front_wheel_x), c.slip_speed_floor))
+    rear_slip = np.arctan2(
+        old_vy - c.rear_axle * old_r, np.maximum(np.abs(old_vx), c.slip_speed_floor)
+    )
+    wheelbase = c.front_axle + c.rear_axle
+    front_limit = c.front_mu * c.mass * c.gravity * c.rear_axle / wheelbase
+    rear_limit = c.rear_mu * c.mass * c.gravity * c.front_axle / wheelbase
+    front = np.clip(-c.front_stiffness * front_slip, -front_limit, front_limit)
+    rear = np.clip(-c.rear_stiffness * rear_slip, -rear_limit, rear_limit)
+    throttle = np.clip(actions[:, 1], -1.0, 1.0)
+    braking = (throttle < 0.0) & (old_vx > c.reverse_threshold)
+    drive = np.where(
+        throttle >= 0.0,
+        throttle * c.engine_force / (1.0 + np.maximum(old_vx, 0.0) / c.engine_speed_falloff),
+        np.where(braking, throttle * c.brake_force, throttle * c.reverse_force),
+    )
+    resistance = c.drag * speed * old_vx
+    resistance += np.where(old_vx != 0.0, np.copysign(c.rolling_resistance, old_vx), 0.0)
+    force_x = drive - resistance - front * sine
+    force_y = front * cosine + rear
+    vx = old_vx + (force_x / c.mass + old_r * old_vy) * c.dt
+    vy = old_vy + (force_y / c.mass - old_r * old_vx) * c.dt
+    r = old_r + (c.front_axle * front * cosine - c.rear_axle * rear) / c.inertia * c.dt
+    stop = ((old_vx > 0.0) & (vx < 0.0) & (braking | (throttle == 0.0))) | (
+        (old_vx < 0.0) & (vx > 0.0) & (throttle == 0.0)
+    )
+    vx = np.maximum(np.where(stop, 0.0, vx), -c.max_reverse_speed)
+    psi = np.arctan2(np.sin(psi + r * c.dt), np.cos(psi + r * c.dt))
+    return np.column_stack(
+        (
+            x + (vx * np.cos(psi) - vy * np.sin(psi)) * c.dt,
+            y + (vx * np.sin(psi) + vy * np.cos(psi)) * c.dt,
+            psi,
+            vx,
+            vy,
+            r,
+            steering,
+        )
     )

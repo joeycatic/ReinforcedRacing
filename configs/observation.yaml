@@ -1,0 +1,9 @@
+ray_count: 9
+ray_half_angle_degrees: 120.0
+ray_max_distance: 60.0
+grid_cell_size: 8.0
+longitudinal_speed_scale: 80.0
+lateral_speed_scale: 40.0
+yaw_rate_scale: 3.0
+curvature_scale: 0.1
+lookahead_meters: [10.0, 25.0, 50.0, 80.0]

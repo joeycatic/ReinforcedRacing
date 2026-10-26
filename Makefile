@@ -1,7 +1,7 @@
 UV ?= $(shell command -v uv 2>/dev/null || echo "$(HOME)/.local/bin/uv")
 ARGS ?=
 
-.PHONY: setup test drive tracks train eval export web-dev web-build
+.PHONY: setup test drive tracks benchmark train eval export web-dev web-build
 setup:
 	$(UV) sync --locked
 
@@ -16,6 +16,9 @@ drive:
 tracks:
 	$(UV) run --locked python -m tools.export_tracks $(ARGS)
 
+benchmark:
+	$(UV) run --locked python -m tools.benchmark $(ARGS)
+
 train eval export web-dev web-build:
-	@echo "$@ is outside M1; see spec.md milestones M2–M6." >&2
+	@echo "$@ is outside M2; see spec.md milestones M3–M6." >&2
 	@exit 2

@@ -1,0 +1,6 @@
+run_dir: artifacts/training/m3-seed2
+gap: 0.03
+medals:
+- medal: gold
+  step: 2785280
+  checkpoint: checkpoints/2785280.pt

@@ -95,3 +95,10 @@
 - Generate the README learning curve as a dependency-free SVG (`tools/plot_learning.py`) that adapts to light/dark mode, rather than adding matplotlib. It plots smoothed rollout return and the existing M4 snapshot completion rates; no new evaluation is run.
 - License the project as MIT.
 - Rewrite the README for first-time visitors (pitch, demo link, results, architecture) and move deployment and GIF-recording instructions to `docs/DEVELOPMENT.md`. Use the existing screenshot until real GIFs are recorded.
+
+# M7 decisions
+
+- Evaluate all 36 retained seed-2 resumable checkpoints without retraining; supply their numeric step as recorder identity because resumable files do not carry `requested_step`.
+- Keep the required 3% gap on every shared track. Only Gold (step 2,785,280) qualifies; no Silver or Bronze qualifies behind it. Ship Gold + Author on every showcase, the explicitly accepted fewer-medals fallback.
+- Gold deterministic laps: sweep 25.230622069s, ribbon 25.624031205s, technical 20.918658349s.
+- Author final deterministic laps: sweep 24.246155310s, ribbon 24.591261626s, technical 19.812376420s.

@@ -39,3 +39,7 @@ web-dev:
 
 web-build:
 	npm run --prefix web build -- $(ARGS)
+
+.PHONY: medals
+medals:
+	$(UV) run --locked python -m tools.select_medals $(ARGS)

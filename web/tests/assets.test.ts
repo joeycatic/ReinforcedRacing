@@ -19,7 +19,19 @@ const asset: Asset = {
   sha256: "a".repeat(64),
 };
 const manifest = (): Manifest => ({
-  version: "manifest.v1",
+  version: "manifest.v2",
+  site: asset,
+  parity_demo: asset,
+  medals: [
+    {
+      medal: "author",
+      step: 42,
+      checkpoint_sha256: "b".repeat(64),
+      model: asset,
+      lap_times: { sweep: 24 },
+      replays: { sweep: asset },
+    },
+  ],
   versions: { ...VERSIONS },
   simulation: asset,
   tracks: [{ ...asset, id: "sweep", name: "Sweep" }],
@@ -172,3 +184,18 @@ it.skipIf(!existsSync(exported + "manifest.json"))(
     }
   },
 );
+
+it("rejects manifest v1 and malformed medal ladders", () => {
+  expect(() =>
+    validateManifest({ ...manifest(), version: "manifest.v1" }),
+  ).toThrow("version");
+  const missing = manifest();
+  missing.medals = [];
+  expect(() => validateManifest(missing)).toThrow("medal");
+  const order = manifest();
+  order.medals.push({ ...order.medals[0], medal: "gold" });
+  expect(() => validateManifest(order)).toThrow("medal");
+  const lap = manifest();
+  delete lap.medals[0].lap_times.sweep;
+  expect(() => validateManifest(lap)).toThrow("lap");
+});

@@ -4,6 +4,8 @@ import type {
   PhysicsConfig,
   TrackConfig,
   TrackData,
+  CarState,
+  Action,
 } from "../sim/types";
 import { Track } from "../sim/track";
 
@@ -20,10 +22,49 @@ export interface Snapshot {
   replays: Record<string, Asset>;
   heatmaps: Record<string, Asset>;
 }
+export type MedalName = "bronze" | "silver" | "gold" | "author";
+export interface Medal {
+  medal: MedalName;
+  step: number;
+  checkpoint_sha256: string;
+  model: Asset;
+  lap_times: Record<string, number | null>;
+  replays: Record<string, Asset>;
+}
+export interface SiteData {
+  stats: {
+    showcase_completion: number;
+    held_out_completion: number;
+    parity_max_error: number;
+    training_steps: number;
+    training_minutes: number;
+    training_tracks: number;
+    held_out_tracks: number;
+    parallel_cars: number;
+    rl_libraries: number;
+  };
+  curves: Record<string, [number, number][]>;
+  snapshots: [number, number, number][];
+  seeds: {
+    seed: number;
+    showcase_pct: number;
+    held_out_pct: number;
+    deterministic_showcase_finishes: number;
+  }[];
+}
+export interface ParityDemo {
+  track_id: string;
+  initial_state: CarState;
+  actions: Action[];
+  python: [number, number, number][];
+}
 export interface Manifest {
   version: string;
   versions: Record<string, string>;
   simulation: Asset;
+  medals: Medal[];
+  site: Asset;
+  parity_demo: Asset;
   tracks: (Asset & { id: string; name: string })[];
   snapshots: Snapshot[];
 }
@@ -80,7 +121,7 @@ function validateAsset(asset: Asset): void {
     throw new Error("Invalid asset integrity descriptor");
 }
 export function validateManifest(data: Manifest): Manifest {
-  if (data.version !== "manifest.v1")
+  if (data.version !== "manifest.v2")
     throw new Error("Unsupported manifest version");
   requireVersions(data.versions);
   validateAsset(data.simulation);
@@ -105,6 +146,33 @@ export function validateManifest(data: Manifest): Manifest {
     for (const track of tracks) {
       validateAsset(snapshot.replays[track]);
       validateAsset(snapshot.heatmaps[track]);
+    }
+  }
+  validateAsset(data.site);
+  validateAsset(data.parity_demo);
+  const order: MedalName[] = ["bronze", "silver", "gold", "author"];
+  if (!Array.isArray(data.medals) || data.medals.at(-1)?.medal !== "author")
+    throw new Error("Missing author medal");
+  let previous = -1;
+  for (const medal of data.medals) {
+    const index = order.indexOf(medal.medal);
+    if (index <= previous) throw new Error("Invalid medal order");
+    previous = index;
+    if (
+      !Number.isSafeInteger(medal.step) ||
+      medal.step < 0 ||
+      !/^[a-f0-9]{64}$/.test(medal.checkpoint_sha256)
+    )
+      throw new Error("Invalid medal identity");
+    validateAsset(medal.model);
+    for (const track of tracks) {
+      const lap = medal.lap_times?.[track];
+      if (
+        lap !== null &&
+        (typeof lap !== "number" || !Number.isFinite(lap) || lap <= 0)
+      )
+        throw new Error("Invalid medal lap time");
+      validateAsset(medal.replays?.[track]);
     }
   }
   return data;
@@ -236,6 +304,28 @@ export class AssetLoader {
     )
       throw new Error("Replay identity or tick count mismatch");
     return { data, frames };
+  }
+  async site(): Promise<SiteData> {
+    return this.json<SiteData>(this.manifest.site);
+  }
+  async parityDemo(): Promise<ParityDemo> {
+    return this.json<ParityDemo>(this.manifest.parity_demo);
+  }
+  async medalReplay(
+    medal: Medal,
+    trackId: string,
+  ): Promise<{ data: Replay; frames: number[][] }> {
+    return this.replay(
+      {
+        id: medal.medal === "author" ? "final" : `medal-${medal.medal}`,
+        step: medal.step,
+        checkpoint_sha256: medal.checkpoint_sha256,
+        model: medal.model,
+        replays: medal.replays,
+        heatmaps: {},
+      },
+      trackId,
+    );
   }
   async heatmap(snapshot: Snapshot, trackId: string): Promise<Heatmap> {
     const data = validateHeatmap(

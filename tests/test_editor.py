@@ -174,3 +174,18 @@ def test_mixed_pool_tags_match_single_track_observations() -> None:
                 np.zeros((1, 2)),
             )[0]
             np.testing.assert_array_equal(observation, crossing_observation(track, arc))
+
+
+def test_raw_control_quantization_is_geometry_canonical() -> None:
+    cfg = load_editor()
+    for name in ("figure8", "pretzel"):
+        raw = shapes()[name][0]
+        rounded = np.round(raw / cfg.quantum) * cfg.quantum
+        assert build_editor_track(raw, cfg).to_dict() == build_editor_track(rounded, cfg).to_dict()
+
+
+def test_raw_control_quantization_uses_ties_even_for_both_signs() -> None:
+    cfg = load_editor()
+    raw = np.array([[0.25, -0.25], [100.25, -0.25], [100.25, 100.25], [0.25, 100.25]])
+    canonical = np.array([[0.2, -0.2], [100.2, -0.2], [100.2, 100.2], [0.2, 100.2]])
+    assert build_editor_track(raw, cfg).to_dict() == build_editor_track(canonical, cfg).to_dict()

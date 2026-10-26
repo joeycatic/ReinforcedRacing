@@ -101,7 +101,7 @@ export function buildTrackData(
   };
 }
 /** numpy.round: ties to even, including negative halfway values. */
-function roundEven(value: number): number {
+export function roundEven(value: number): number {
   const lo = Math.floor(value),
     fraction = value - lo;
   return fraction === 0.5 ? (lo % 2 === 0 ? lo : lo + 1) : Math.round(value);
@@ -116,6 +116,10 @@ export function buildEditorTrack(
     control.some((p) => p.length !== 2 || !p.every(Number.isFinite))
   )
     throw new Error("At least four finite 2D controls required");
+  // Canonical raw controls are also the integer-quantum share representation.
+  control = control.map(
+    (p) => p.map((v) => roundEven(v / config.quantum) * config.quantum) as Vec2,
+  );
   const mean: Vec2 = [0, 0];
   for (const p of control) {
     mean[0] += p[0];

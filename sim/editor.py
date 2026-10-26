@@ -22,6 +22,8 @@ def build_editor_track(
         or not np.isfinite(control).all()
     ):
         raise ValueError("At least four finite 2D controls required")
+    # Share links store integer quantum coordinates: canonicalize before scaling.
+    control = np.round(control / config.quantum) * config.quantum
     perimeter = float(np.linalg.norm(np.roll(control, -1, axis=0) - control, axis=1).sum())
     if perimeter < 1e-8:
         raise ValueError("Control polygon has zero length")

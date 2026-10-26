@@ -34,7 +34,7 @@ localhost or HTTPS.
 `web/src/assets/load.ts` checks all five versions before fetching any dependent file.
 It verifies size/hash before parsing JSON or returning model bytes, rejects unsafe
 paths and duplicate identities, and checks per-file versions and track/snapshot
-identities. M5 will use this loader from the race UI; M4 supplies no game page yet.
+identities. M5 uses this loader from the race UI; see `M5_RESULTS.md` for browser validation.
 
 ## Models
 
@@ -51,7 +51,7 @@ normalizer against ONNX Runtime CPU on batches of 1, 17, and 256 observations
 (including zero and both observation extremes). Absolute error must be ≤1e-5 for
 both outputs; non-finite values fail export. The manifest retains each result.
 The explicit TorchScript ONNX exporter is used for this feed-forward graph; PyTorch
-currently emits a deprecation notice for it. Browser inference integration is M5.
+currently emits a deprecation notice for it. Browser inference integration is documented in `M5_RESULTS.md`.
 
 ## Replays
 
@@ -106,4 +106,4 @@ State/observation error must be ≤1e-6 and failures report the first tick/field
 If an exported bundle is present, Vitest also loads every production asset through
 the browser loader with integrity and identity checks. This integration test is
 skipped on clean checkouts until `make export`; the synthetic codec/loader tests
-always run. Browser rendering and live AI integration are the next milestone.
+always run. Browser rendering and live AI integration are documented in `M5_RESULTS.md`.

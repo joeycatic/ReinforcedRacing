@@ -8,3 +8,7 @@ web/node_modules/
 web/public/assets/
 web/public/assets.previous/
 web/public/.assets-*/
+web/dist/
+web/public/runtime/
+web/test-results/
+web/playwright-report/

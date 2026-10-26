@@ -34,6 +34,8 @@ export:
 parity:
 	$(UV) run --locked python -m tools.generate_parity $(ARGS)
 
-web-dev web-build:
-	@echo "$@ is outside M4; see spec.md milestones M5–M6." >&2
-	@exit 2
+web-dev:
+	npm run --prefix web dev -- $(ARGS)
+
+web-build:
+	npm run --prefix web build -- $(ARGS)

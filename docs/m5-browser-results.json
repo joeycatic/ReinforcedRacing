@@ -1,0 +1,106 @@
+{
+  "milestone": "M5",
+  "base_commit": "ab0ccb7",
+  "versions": {
+    "physics": "physics.v1",
+    "obs": "obs.v1",
+    "track": "track.v1",
+    "replay": "replay.v1",
+    "heatmap": "heatmap.v1"
+  },
+  "asset_manifest_sha256": "dc3bee77129a15fb795ce65f71be03788a48fc548c0d910a742374f8164e6c5a",
+  "checkpoint_sha256": "5f247575bc0003fc4abf0a6c41704562ba818e1f8b31f83ddc92ff53011426f3",
+  "environment": {
+    "cpu": "Intel Core i5-11400F",
+    "os": "Linux",
+    "browser": "Chromium 156.0.8078.4",
+    "webgl": "ANGLE Vulkan SwiftShader Device (Subzero)",
+    "onnx_runtime_web": "1.30.0",
+    "wasm_threads": 1,
+    "viewport": [
+      1440,
+      1050
+    ],
+    "device_scale_factor": 1,
+    "multisample_antialiasing": false
+  },
+  "requirements": {
+    "lap_time_relative_error_max": 0.02,
+    "render_fps_min": 57,
+    "render_p95_ms_max": 22
+  },
+  "checks": {
+    "make_test": {
+      "pytest_passed": 86,
+      "vitest_passed": 24,
+      "typecheck": true,
+      "ruff": true
+    },
+    "web_build": true,
+    "playwright_passed": 5,
+    "production_subpath": {
+      "path": "/dist/",
+      "live_policy_ready": true,
+      "keyboard_driving": true,
+      "page_errors": [],
+      "failed_requests": []
+    }
+  },
+  "measurements": [
+    {
+      "track": "sweep",
+      "snapshot": "final",
+      "browserLapTime": 24.22508223553428,
+      "pythonLapTime": 24.246155309819926,
+      "relativeError": 0.0008691305494158381,
+      "ticks": 1454,
+      "inferences": 727,
+      "crashes": 0,
+      "maxPositionError": 0.8623302473224526,
+      "inferenceAndSimulationMs": 109.5
+    },
+    {
+      "track": "ribbon",
+      "snapshot": "final",
+      "browserLapTime": 24.65233828394176,
+      "pythonLapTime": 24.591261626278996,
+      "relativeError": 0.002483673208433309,
+      "ticks": 1480,
+      "inferences": 740,
+      "crashes": 0,
+      "maxPositionError": 2.6032076126256127,
+      "inferenceAndSimulationMs": 112.40000000596046
+    },
+    {
+      "track": "technical",
+      "snapshot": "final",
+      "browserLapTime": 19.621722979668267,
+      "pythonLapTime": 19.81237641958874,
+      "relativeError": 0.00962294658060166,
+      "ticks": 1178,
+      "inferences": 589,
+      "crashes": 0,
+      "maxPositionError": 7.207760296622774,
+      "inferenceAndSimulationMs": 99
+    },
+    {
+      "render": {
+        "fps": 60.102033685236364,
+        "p95": 16.700000000000728,
+        "frames": 602,
+        "duration": 10016.299999976158,
+        "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.8078.4 Safari/537.36"
+      }
+    }
+  ],
+  "exploratory_network_comparison": {
+    "samples": 120,
+    "max_action_error_vs_pytorch": 7.152557373046875e-07,
+    "method": "40 actual initial driving observations per showcase, original PyTorch mean controls versus browser WASM on identical inputs"
+  },
+  "open_checks": [
+    "Physical gamepad",
+    "Subjective keyboard feel",
+    "Performance on an actual mid-range laptop"
+  ]
+}

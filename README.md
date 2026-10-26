@@ -1,9 +1,9 @@
 # Racing RL
 
 A deterministic 2D racing simulation with arcade bicycle physics and seeded tracks.
-**M1–M4 are implemented:** manual driving, seeded tracks, lap timing, batched RL
-environments, PPO from scratch, replay/heatmap recording, ONNX export and browser
-simulation parity. See [spec.md](spec.md) for the remaining browser milestones.
+**M1–M5 are implemented:** manual driving, seeded tracks, batched RL environments,
+PPO from scratch, exported ghosts/heatmaps, simulation parity, and a static browser
+race against a live ONNX AI. See [spec.md](spec.md) for the remaining M6 milestone.
 
 ## Run
 
@@ -255,7 +255,7 @@ six ONNX policies, 18 quantized/delta ghosts, and 18 sparse heatmaps (50 stochas
 runs each). Every asset has a size/hash descriptor, and the loader rejects incompatible
 physics/obs/track/replay/heatmap versions before fetching dependent files. The bundle
 is self-contained. Generated models/evaluations/bundles are ignored; preserve the
-training checkpoints to rebuild them. The full browser UI arrives in M5.
+training checkpoints to rebuild them. The race interface uses this bundle directly.
 
 ONNX accepts raw float64 `[batch,22]` observations and includes frozen normalization.
 It returns float32 policy means and critic values. Export checks both against PyTorch
@@ -263,6 +263,27 @@ at ≤1e-5, including single-car batches. Each showcase fixture tests 600 ticks 
 float64 TypeScript physics/observations and integrated crash/respawn sessions at ≤1e-6.
 See [docs/ASSETS.md](docs/ASSETS.md) for schemas, replay decoding, heatmap conventions,
 cache integrity, parity coverage and limitations.
+
+## Race the live AI (M5)
+
+![Live race against the ONNX opponent](docs/images/m5-race.png)
+
+```sh
+make web-dev                       # localhost Vite server; requires make export first
+make web-build                     # static site in web/dist/
+cd web && npm run test:e2e          # requires npx playwright install chromium once
+```
+
+Choose a circuit and opponent stage, then take the wheel. Arrow keys/WASD drive;
+Space brakes/reverses, R respawns, Enter restarts, and Escape pauses. Standard gamepad
+stick/triggers are supported. The AI runs its ONNX policy every two physics ticks;
+the optional reference ghost is an independent overlay. Countdown, checkpoint splits,
+follow camera, minimap, first-lap results and rematches are included.
+
+The live browser final policy completes all showcases with lap times **0.087% / 0.248% /
+0.962%** from Python evaluation (required: ≤2%). The measured software-rendered Chromium
+sample sustained **60 FPS**, p95 **16.8 ms**, on this desktop host. See
+[docs/M5_RESULTS.md](docs/M5_RESULTS.md) for conditions, commands, timings and limits.
 
 ## Code and data
 
@@ -285,6 +306,7 @@ cache integrity, parity coverage and limitations.
 | `eval/record.py`, `eval/formats.py` | Per-tick recording, quantized ghosts and sparse heatmaps |
 | `export/onnx.py`, `export/assets.py` | Normalized ONNX policy graphs and versioned static packaging |
 | `web/src/sim/`, `web/src/assets/` | Float64 browser simulation and strict asset loaders |
+| `web/src/race/`, `web/src/main.ts` | Live race engine, WASM policy, PixiJS scene, input and interface |
 | `tools/generate_parity.py`, `tests/fixtures/parity/` | Python truth for 600-tick Vitest parity checks |
 
 Simulation uses SI units, positive-left steering and a y-up world. Physics advances at
@@ -300,18 +322,18 @@ Closed polylines have N points with no duplicate final point; `arc_length` has N
 entries including the closing segment. Checkpoints are arc lengths at 25 m intervals,
 starting at zero. Sampling wraps across the finish. JSON loading checks the version,
 finite geometry, derived arrays, and track validity, preserving exported numbers.
-The future browser should load this geometry instead of regenerating it.
+The browser loads this geometry directly instead of regenerating it.
 
 ## Scope and open issues
 
-M1–M4 are implemented. M5's browser race UI/live AI opponent and M6's time-lapse,
-heatmap visualization and polish remain. `web-dev` and `web-build` report this scope
-explicitly; `make export` already produces the static data bundle. M1 track-only
-export remains `make tracks`. Browser inference itself has not yet been integrated.
+M1–M5 are implemented. M6's time-lapse, heatmap visualization and final polish remain.
+`make web-build` produces the static race app; M1 track-only export remains `make tracks`.
+Browser lap-time parity and frame timing pass on the measured host, with laptop,
+physical gamepad and subjective keyboard playtesting still open.
 The explicit TorchScript ONNX exporter emits a PyTorch deprecation notice; graphs
 are numerically verified with ONNX Runtime before publication.
 
 Automated checks establish the numeric driving targets and recoverable sliding;
-subjective keyboard feel still needs human playtesting. Rendering is deliberately
-debug quality. See [DECISIONS.md](DECISIONS.md) for ambiguity resolutions, including
+subjective keyboard feel still needs human playtesting. Pygame rendering stays at
+debug quality; the browser uses the PixiJS race interface. See [DECISIONS.md](DECISIONS.md) for ambiguity resolutions, including
 the literal half-car-width wall threshold and deferred browser parity work.

@@ -125,8 +125,16 @@ def test_complete_export_integrity_and_cache_repair(
     monkeypatch.setattr(assets, "make_track_pool", lambda split: pool)
     monkeypatch.setattr(recording, "load_env", lambda: EnvConfig(1, 3))
     monkeypatch.setattr(evaluate, "load_env", lambda: EnvConfig(1, 3))
+    monkeypatch.setattr(assets, "load_medals", lambda: [])
+    monkeypatch.setattr(
+        assets,
+        "build_site_data",
+        lambda: json.loads((ROOT / "web/public/assets/site.json").read_text()),
+    )
     manifest = assets.build_assets(config)
     root = Path(config.assets_dir)
+    assert manifest["version"] == "manifest.v2"
+    assert manifest["medals"][-1]["medal"] == "author"
     assert manifest["versions"] == assets.VERSIONS
     assert len(manifest["snapshots"]) == 2
     for snapshot in manifest["snapshots"]:
@@ -183,3 +191,47 @@ def test_generated_fixtures_are_current() -> None:
             json.loads(json.dumps(fixture)),
             name,
         )
+
+
+def test_site_data_matches_sources() -> None:
+    from export.site import build_site_data
+
+    if not (ROOT / "artifacts/training/m3-seed1/metrics.jsonl").exists():
+        pytest.skip("Retained training logs are needed to regenerate site data")
+    data = build_site_data()
+    assert data["stats"]["showcase_completion"] == pytest.approx(98.666, abs=0.01)
+    assert data["stats"]["held_out_completion"] == pytest.approx(85.2)
+    assert data["stats"]["parity_max_error"] < 1e-6
+    assert set(data["curves"]) == {"1", "2"}
+    assert data["snapshots"][-1][0] == 6012928
+
+
+def test_parity_demo_round_trips_fixture() -> None:
+    from export.site import build_parity_demo
+
+    fixture = ROOT / "tests/fixtures/parity/sweep.json"
+    source = json.loads(fixture.read_text())
+    demo = build_parity_demo(fixture)
+    assert len(demo["actions"]) == len(demo["python"]) == 600
+    assert demo["actions"] == [s["action"] for s in source["steps"]]
+    assert demo["python"] == [[s["state"][k] for k in ("x", "y", "psi")] for s in source["steps"]]
+
+
+def test_committed_medal_bundle_integrity() -> None:
+    root = ROOT / "web/public/assets"
+    manifest = json.loads((root / "manifest.json").read_text())
+    assert manifest["version"] == "manifest.v2"
+    medals = manifest["medals"]
+    assert medals[-1]["medal"] == "author"
+    for medal in medals:
+        for asset in [medal["model"], *medal["replays"].values()]:
+            path = root / asset["path"]
+            assert artifacts.sha256(path) == asset["sha256"]
+            assert path.stat().st_size == asset["bytes"]
+    for slower, faster in zip(medals, medals[1:], strict=False):
+        for track in manifest["tracks"]:
+            a, b = slower["lap_times"][track["id"]], faster["lap_times"][track["id"]]
+            if a is not None and b is not None:
+                assert a >= b * 1.03
+    for key in ("site", "parity_demo"):
+        assert artifacts.sha256(root / manifest[key]["path"]) == manifest[key]["sha256"]

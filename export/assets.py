@@ -1,5 +1,6 @@
 """Assemble and verify a self-contained, versioned static asset directory."""
 
+import json
 import shutil
 import tempfile
 from pathlib import Path
@@ -7,6 +8,7 @@ from pathlib import Path
 import numpy as np
 
 from eval.artifacts import (
+    fingerprint,
     parse_config,
     run_evaluation,
     sha256,
@@ -16,7 +18,10 @@ from eval.artifacts import (
 )
 from eval.config import ExportConfig
 from eval.formats import HEATMAP_VERSION, REPLAY_VERSION
+from eval.medals import load_medals
+from eval.record import record_runs
 from export.onnx import export_policy
+from export.site import build_parity_demo, build_site_data
 from sim import OBS_VERSION, PHYSICS_VERSION, TRACK_VERSION
 from sim.config import ROOT
 from sim.pool import make_track_pool
@@ -49,7 +54,7 @@ def build_assets(config: ExportConfig) -> dict:
         config_path = stage / "simulation.json"
         write_json(config_path, {"versions": VERSIONS, **simulation_config()})
         manifest = {
-            "version": "manifest.v1",
+            "version": "manifest.v2",
             "versions": VERSIONS,
             "simulation": descriptor(stage, config_path),
             "tracks": [],
@@ -95,6 +100,85 @@ def build_assets(config: ExportConfig) -> dict:
                 f"value {verification['max_value_error']:.3g}",
                 flush=True,
             )
+        manifest["medals"] = []
+        evidence = json.loads((ROOT / "experiments/medal-selection.json").read_text())
+        showcase = make_track_pool("showcase")
+        for choice in load_medals():
+            path = ROOT / config.run_dir / "checkpoints" / f"{choice.step}.pt"
+            checkpoint = load_checkpoint(path)
+            if (
+                checkpoint["source_sha256"]
+                != evidence["candidates"][str(choice.step)]["checkpoint_sha256"]
+            ):
+                raise ValueError(f"Medal checkpoint changed since selection: {path}")
+            checkpoint["requested_step"] = f"medal-{choice.medal}"
+            signature = fingerprint(checkpoint, config, [showcase])
+            directory = ROOT / config.evaluation_dir / "medals" / str(choice.step)
+            cache = directory / "summary.json"
+            cached = json.loads(cache.read_text()) if cache.exists() else {}
+            if cached.get("fingerprint") != signature or not all(
+                (directory / name).is_file() and sha256(directory / name) == digest
+                for name, digest in cached.get("files", {}).items()
+            ):
+                summary, replays, _ = record_runs(checkpoint, showcase, config, deterministic=True)
+                files = {}
+                for track, replay in zip(showcase.tracks, replays, strict=True):
+                    name = f"{track.id}.replay.v1.json"
+                    write_json(directory / name, replay)
+                    files[name] = sha256(directory / name)
+                cached = {"fingerprint": signature, "files": files, "summary": summary}
+                write_json(cache, cached)
+            laps = {
+                t.id: cached["summary"]["tracks"][t.id]["mean_lap_time"] for t in showcase.tracks
+            }
+            if laps != choice.lap_times:
+                raise ValueError("Medal lap times changed since selection")
+            model = stage / "models" / f"medal-{choice.medal}.onnx"
+            verification = export_policy(checkpoint, model, config, samples)
+            medal = {
+                "medal": choice.medal,
+                "step": choice.step,
+                "checkpoint_sha256": checkpoint["source_sha256"],
+                "model": descriptor(stage, model),
+                "lap_times": laps,
+                "replays": {},
+                "onnx_validation": verification,
+            }
+            for track in showcase.tracks:
+                name = f"{track.id}.replay.v1.json"
+                source = directory / name
+                if sha256(source) != cached["files"][name]:
+                    raise ValueError("Medal replay changed during export")
+                destination = stage / "replays" / f"medal-{choice.medal}" / name
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(source, destination)
+                medal["replays"][track.id] = descriptor(stage, destination)
+            manifest["medals"].append(medal)
+        final = manifest["snapshots"][-1]
+        author_laps = {
+            t["id"]: reports[-1]["deterministic"]["tracks"][t["id"]]["mean_lap_time"]
+            for t in manifest["tracks"]
+        }
+        manifest["medals"].append(
+            {
+                "medal": "author",
+                "step": final["step"],
+                "checkpoint_sha256": final["checkpoint_sha256"],
+                "model": final["model"],
+                "lap_times": author_laps,
+                "replays": final["replays"],
+            }
+        )
+        for key, name, value in [
+            ("site", "site.json", build_site_data()),
+            (
+                "parity_demo",
+                "parity-demo.json",
+                build_parity_demo(ROOT / "tests/fixtures/parity/sweep.json"),
+            ),
+        ]:
+            write_json(stage / name, value)
+            manifest[key] = descriptor(stage, stage / name)
         write_json(stage / "manifest.json", manifest)
         backup = target.with_name(target.name + ".previous")
         if backup.exists():

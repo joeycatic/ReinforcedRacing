@@ -1,4 +1,4 @@
-# Static assets and parity (M4)
+# Static assets and parity
 
 `make eval` evaluates every scheduled snapshot in `configs/export.yaml`'s `run_dir`.
 It records one deterministic policy-mean ghost per showcase, plus 50 stochastic
@@ -14,8 +14,8 @@ after every model and source asset passes verification. Cache identities cover s
 code, checkpoint hashes, configuration, and both pools' exact geometry. Corrupt cached
 files trigger regeneration. Missing scheduled checkpoints are errors, never placeholders.
 
-Generated checkpoints, evaluations, and assets are ignored by Git. Keep the training
-run to regenerate exports. The current reference is `artifacts/training/m3-seed2`;
+Generated checkpoints and evaluations are ignored by Git. The reference asset bundle is
+committed so a fresh clone can play; keep the training logs and checkpoints to regenerate it. The current reference is `artifacts/training/m3-seed2`;
 use `make export ARGS="--run-dir artifacts/training/my-run"` for another complete run.
 Custom output paths, trial counts, quantization, and other export settings belong in a
 YAML file passed through `--config`. The summary-only M3 evaluator remains available
@@ -23,7 +23,7 @@ with `make eval ARGS="--checkpoint path/to/latest.pt --runs 5"`.
 
 ## Manifest
 
-`manifest.json` declares `manifest.v1`, plus physics/obs/track/replay/heatmap versions.
+`manifest.json` declares `manifest.v2`, plus physics/obs/track/replay/heatmap versions.
 It lists the simulation configuration, three tracks, and all scheduled snapshots.
 Each snapshot names its actual step count, source checkpoint SHA-256, ONNX model,
 per-track replay and heatmap descriptors, and numeric ONNX validation results.
@@ -35,6 +35,32 @@ localhost or HTTPS.
 It verifies size/hash before parsing JSON or returning model bytes, rejects unsafe
 paths and duplicate identities, and checks per-file versions and track/snapshot
 identities. M5 uses this loader from the race UI; see `M5_RESULTS.md` for browser validation.
+
+## Medal opponents and portfolio data (M7)
+
+Run `make medals` before regenerating the reference export. It evaluates every retained
+seed-2 checkpoint deterministically, checks a 3% lap-time separation on every shared
+track, and commits the chosen steps in `configs/medals.yaml` with all candidate laps
+and checkpoint hashes in `experiments/medal-selection.json`. Gold (2,785,280 steps)
+and Author (final) qualify; no Silver or Bronze clears the required gap.
+
+The manifest adds `medals`, ordered Bronze → Silver → Gold → Author with unavailable
+levels omitted. Each entry has `medal`, `step`, `checkpoint_sha256`, a hashed `model`,
+a `lap_times` map (null for a failed track), and per-track replay descriptors. Author
+reuses the final snapshot's model/replays. A medal without a lap is hidden on that track
+and ignored when awarding results. Medal checkpoint hashes are checked against selection
+evidence, and deterministic caches under `medals/<step>/` use the existing
+source/configuration/geometry fingerprints and file-integrity checks.
+
+`site` points to hashed `site.json`: completion rates, training duration/steps, pool and
+parallel-car counts, both seeds' smoothed training-return curves, snapshot completion
+rates and seed comparison. `export/site.py` reads retained logs, M4 summaries, committed
+M3 result files and validation evidence. The README plot shares these loaders.
+
+`parity_demo` points to hashed `parity-demo.json`: the sweep fixture's initial state,
+600 actions and 600 Python `[x,y,psi]` poses. These are the fixture's unrestricted
+physics trajectory, not its separate crash/respawn session trajectory. The intro
+replays the unchanged TypeScript physics kernel to compute its displayed error live.
 
 ## Models
 

@@ -1,9 +1,10 @@
 """Render the README learning curve as a dependency-free, theme-aware SVG."""
 
 import argparse
-import json
 from pathlib import Path
 from xml.sax.saxutils import escape
+
+from export.site import SMOOTH, load_snapshots, load_training
 
 WIDTH = 760
 LEFT, RIGHT = 64, 120
@@ -12,7 +13,6 @@ PANEL_H = 170
 TOP_A = 64
 TOP_B = TOP_A + PANEL_H + 84
 HEIGHT = TOP_B + PANEL_H + 56
-SMOOTH = 15
 
 STYLE = """
 svg { --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #8a8984;
@@ -31,33 +31,6 @@ text { font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif; fil
 .line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
 .dot { stroke: var(--surface); stroke-width: 2; }
 """
-
-
-def load_training(run_dir: Path) -> tuple[list[tuple[int, float]], int]:
-    rows = [
-        json.loads(line)
-        for line in (run_dir / "metrics.jsonl").read_text(encoding="utf-8").splitlines()
-        if line.strip()
-    ]
-    switch = next(row["step"] for row in rows if row["stage"] != rows[0]["stage"])
-    points = []
-    for i, row in enumerate(rows):
-        window = rows[max(0, i - SMOOTH + 1) : i + 1]
-        points.append(
-            (row["step"], sum(r["rollout/episodic_return"] for r in window) / len(window))
-        )
-    return points, switch
-
-
-def load_snapshots(summary: Path) -> list[tuple[int, float, float]]:
-    return [
-        (
-            snap["global_step"],
-            100 * snap["showcase"]["summary"]["lap_completion_rate"],
-            100 * snap["held_out"]["summary"]["lap_completion_rate"],
-        )
-        for snap in json.loads(summary.read_text(encoding="utf-8"))
-    ]
 
 
 def render(

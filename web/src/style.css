@@ -921,3 +921,330 @@ footer i {
   outline: 2px solid var(--player);
   outline-offset: 4px;
 }
+
+/* Shared analysis tools stay separate from the live opponent selection. */
+.view-tabs {
+  height: 100%;
+  display: flex;
+  gap: 5px;
+  align-self: stretch;
+}
+.view-tabs button {
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font: 500 10px var(--mono);
+  letter-spacing: 0.8px;
+  padding: 0 18px;
+}
+.view-tabs button span {
+  margin-right: 10px;
+  color: #6a8384;
+}
+.view-tabs button[aria-pressed="true"] {
+  border-color: var(--player);
+  color: #e5ece5;
+}
+.view-tabs button[aria-pressed="true"] span {
+  color: var(--player);
+}
+.ghost-lineup {
+  margin: 22px 0;
+}
+.ghost-lineup > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  border-left: 2px solid var(--ghost-color);
+  padding: 12px 9px;
+  margin-bottom: 8px;
+  font: 9px var(--mono);
+}
+.ghost-lineup strong {
+  color: var(--ghost-color);
+  font-weight: 500;
+}
+.ghost-lineup span {
+  font-size: 8px;
+  color: var(--muted);
+}
+#ghost-sidebar > .section-label {
+  margin: 25px 0 14px;
+}
+.playback-controls {
+  padding: 14px 22px;
+  background: #172429;
+  border-top: 1px solid var(--border);
+}
+.playback-buttons {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.playback-buttons button {
+  border: 1px solid #48635f;
+  color: #e5ece5;
+  background: #233736;
+  font: 500 11px var(--mono);
+  padding: 0 16px;
+  min-width: 78px;
+}
+.playback-buttons button:first-child {
+  background: var(--player);
+  color: #142421;
+  border-color: var(--player);
+}
+.playback-buttons label {
+  font: 9px var(--mono);
+  color: var(--muted);
+  margin-left: 8px;
+}
+.playback-buttons select {
+  width: 72px;
+  font: 11px var(--mono);
+  padding: 0 8px;
+}
+.playback-buttons output {
+  margin-left: auto;
+  font: 11px var(--mono);
+  color: var(--player);
+}
+input[type="range"] {
+  width: 100%;
+  height: 25px;
+  margin: 10px 0 0;
+  accent-color: var(--player);
+  cursor: pointer;
+}
+input[type="checkbox"] {
+  accent-color: var(--player);
+}
+.analysis-panel {
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  gap: 25px;
+  border: 1px solid var(--border);
+  border-top: 0;
+  padding: 22px;
+  background: #142024;
+}
+.analysis-layers > .eyebrow {
+  color: #b4c8c2;
+  font-size: 9px;
+  margin-bottom: 14px;
+}
+.analysis-layers > div {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+.analysis-layers label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 30px;
+  font-size: 10px;
+  cursor: pointer;
+}
+.analysis-layers label:last-child {
+  color: #ffb7a6;
+}
+.analysis-layers input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+}
+.analysis-layers p:last-child {
+  font: 8px/1.6 var(--mono);
+  color: var(--muted);
+  margin: 10px 0 0;
+}
+.analysis-stage {
+  align-self: center;
+  min-width: 0;
+}
+.analysis-stage > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  font: 9px var(--mono);
+  letter-spacing: 0.7px;
+  color: var(--muted);
+}
+.analysis-stage output {
+  font-weight: 500;
+  color: var(--player);
+}
+.scale-caption {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font: 7px var(--mono);
+  color: var(--muted);
+  margin-top: 7px;
+}
+.scale-caption > span:nth-child(2) {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.scale-caption i {
+  display: inline-block;
+  width: 60px;
+  height: 4px;
+  background: linear-gradient(90deg, #2882b4, #86ffd9);
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+@media (max-width: 1050px) {
+  .analysis-panel {
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: 18px;
+    padding: 18px;
+  }
+  .view-tabs button {
+    padding: 0 12px;
+    font-size: 9px;
+  }
+}
+@media (max-width: 720px) {
+  .masthead {
+    position: relative;
+    height: 118px;
+    align-items: flex-start;
+    padding-top: 20px;
+  }
+  .system-status {
+    margin-top: 12px;
+  }
+  .view-tabs {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 42px;
+  }
+  .view-tabs button {
+    flex: 1;
+    font-size: 9px;
+    min-height: 42px;
+  }
+  .analysis-panel {
+    grid-template-columns: 1fr;
+    gap: 18px;
+    padding: 17px;
+  }
+  .analysis-layers > div {
+    gap: 20px;
+  }
+  .analysis-layers label {
+    min-height: 38px;
+  }
+  .analysis-layers p:last-child {
+    font-size: 8px;
+  }
+  .analysis-layers > .eyebrow {
+    margin-bottom: 8px;
+  }
+  .playback-controls {
+    padding: 12px;
+  }
+  .playback-buttons {
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .playback-buttons button {
+    padding: 0 9px;
+    min-width: 60px;
+  }
+  .playback-buttons label {
+    margin-left: auto;
+  }
+  .playback-buttons output {
+    width: 100%;
+    text-align: right;
+    font-size: 10px;
+    margin-top: 5px;
+  }
+  body[data-mode="ghosts"] .setup {
+    display: block;
+  }
+  #ghost-sidebar > .field-note {
+    margin: 14px 0;
+  }
+  .ghost-lineup {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .ghost-lineup > div {
+    font-size: 9px;
+    margin: 0;
+  }
+  .ghost-lineup span {
+    font-size: 7px;
+  }
+  .scale-caption {
+    font-size: 6px;
+  }
+  .scale-caption i {
+    width: 35px;
+  }
+}
+.analysis-layers > div {
+  flex-wrap: wrap;
+  column-gap: 15px;
+  row-gap: 2px;
+}
+.ai-inspector {
+  position: absolute;
+  left: 24px;
+  bottom: 52px;
+  width: 165px;
+  padding: 12px;
+  background: #111e23e8;
+  border: 1px solid #4a5c58;
+  font: 8px var(--mono);
+  color: #bed0c5;
+  pointer-events: none;
+}
+.ai-inspector > strong {
+  font: 500 8px var(--mono);
+  color: var(--ai);
+  display: block;
+  margin-bottom: 12px;
+  letter-spacing: 0.7px;
+}
+.ai-inspector label {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 7px;
+}
+.ai-inspector meter {
+  width: 100%;
+  height: 9px;
+  display: block;
+  margin-top: 3px;
+}
+.ai-inspector p {
+  display: flex;
+  justify-content: space-between;
+  font-size: 7px;
+  margin: 11px 0 0;
+}
+.ai-inspector output {
+  color: var(--ai);
+  font-size: 8px;
+}

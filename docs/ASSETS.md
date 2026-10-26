@@ -107,3 +107,8 @@ If an exported bundle is present, Vitest also loads every production asset throu
 the browser loader with integrity and identity checks. This integration test is
 skipped on clean checkouts until `make export`; the synthetic codec/loader tests
 always run. Browser rendering and live AI integration are documented in `M5_RESULTS.md`.
+
+M6's `web/src/viewer/` samples the decoded replays on one shared seconds clock and
+rasterizes sparse heatmap counts without changing their grid. It uses a fixed
+per-track scale across snapshots and checks response identity before applying a
+layer. See [M6 validation](M6_RESULTS.md) and the [main README](../README.md).

@@ -19,7 +19,14 @@
           ><span class="brand-mark" aria-hidden="true">R<span>R</span></span
           ><span>REINFORCED<br /><b>RACING</b></span></a
         >
-        <span class="mode"><span>01</span> RACE THE AI</span>
+        <nav class="view-tabs" aria-label="Experience">
+          <button id="mode-race" disabled aria-pressed="true">
+            <span>01</span> RACE THE AI
+          </button>
+          <button id="mode-ghosts" disabled aria-pressed="false">
+            <span>02</span> WATCH IT LEARN
+          </button>
+        </nav>
         <div class="system-status">
           <i></i><span id="system-status">CONNECTING</span>
         </div>
@@ -58,14 +65,16 @@
                 <strong id="track-length">—</strong><span>METERS / 1 LAP</span>
               </div>
             </div>
-            <label for="snapshot-select">AI TRAINING STAGE</label>
-            <select id="snapshot-select" disabled>
+            <label for="snapshot-select" data-race-only
+              >AI TRAINING STAGE</label
+            >
+            <select id="snapshot-select" data-race-only disabled>
               <option>Loading policies…</option>
             </select>
-            <p class="field-note" id="snapshot-note">
+            <p class="field-note" id="snapshot-note" data-race-only>
               A live opponent. Every corner is a decision.
             </p>
-            <div class="lineup">
+            <div class="lineup" data-race-only>
               <div>
                 <span class="driver-color player"></span><span>YOU</span
                 ><small>KEYBOARD / GAMEPAD</small>
@@ -75,18 +84,39 @@
                 ><small id="ai-label">FINAL POLICY</small>
               </div>
             </div>
-            <label class="ghost-control"
+            <label class="ghost-control" data-race-only
               ><input type="checkbox" id="ghost-toggle" /><span
                 >Reference ghost</span
               ><span class="toggle-track" aria-hidden="true"></span
             ></label>
-            <button id="start-button" class="primary-button" disabled>
+            <button
+              id="start-button"
+              class="primary-button"
+              data-race-only
+              disabled
+            >
               <span>LOADING THE GRID</span><span aria-hidden="true">↗</span>
             </button>
-            <button id="pause-button" class="quiet-button" disabled>
+            <button
+              id="pause-button"
+              class="quiet-button"
+              data-race-only
+              disabled
+            >
               Pause race <kbd>ESC</kbd>
             </button>
-            <details class="controls">
+            <section id="ghost-sidebar" hidden aria-label="Training stages">
+              <p class="section-label">ONE START. EVERY STAGE.</p>
+              <p class="field-note">
+                The same circuit, from the first attempt to the final policy.
+                All ghosts share one start time.
+              </p>
+              <div id="ghost-lineup" class="ghost-lineup"></div>
+              <p class="field-note">
+                Each ghost stops at its finish, crash, or time limit.
+              </p>
+            </section>
+            <details class="controls" data-race-only>
               <summary class="section-label">
                 KEYBOARD CONTROLS <span>+</span>
               </summary>
@@ -121,7 +151,7 @@
               aria-label="Race controls. WASD or arrows to drive, R to respawn, Enter to restart, Escape to pause."
             >
               <div id="canvas-host"></div>
-              <div class="hud">
+              <div class="hud" data-race-only>
                 <div class="timer-block">
                   <span>LAP 01 / 01</span
                   ><strong id="lap-timer">00:00.000</strong>
@@ -136,17 +166,45 @@
                 ><strong>GETTING READY</strong>
                 <p>Loading track and live policy.</p>
               </div>
-              <div class="view-legend">
+              <div class="view-legend" data-race-only>
                 <span><i class="player"></i> YOU</span
                 ><span><i class="ai"></i> LIVE AI</span>
               </div>
-              <div class="minimap">
+              <div class="minimap" data-race-only>
                 <svg id="minimap" aria-label="Race minimap" role="img">
                   <path id="minimap-path" />
                   <circle id="minimap-ai" r="5" />
                   <circle id="minimap-player" r="5" /></svg
                 ><span>CIRCUIT MAP</span>
               </div>
+              <aside
+                id="ai-inspector"
+                class="ai-inspector"
+                hidden
+                aria-label="Latest AI observation and controls"
+              >
+                <strong>WHAT THE AI SEES</strong
+                ><label for="ai-steer"
+                  >STEER <output id="ai-steer-value">0.00</output></label
+                ><meter id="ai-steer" min="-1" max="1" value="0"></meter>
+                <label for="ai-throttle"
+                  >THROTTLE / BRAKE
+                  <output id="ai-throttle-value">0.00</output></label
+                ><meter id="ai-throttle" min="-1" max="1" value="0"></meter>
+                <p
+                  title="Critic estimate in training reward units, not seconds or a win probability."
+                >
+                  EXPECTED RETURN <output id="ai-value">0.00</output>
+                </p>
+                <meter
+                  id="ai-value-meter"
+                  min="-1"
+                  max="1"
+                  value="0"
+                  aria-label="Expected return, scaled for display"
+                  title="Bounded display of expected return; the number above is the raw critic output."
+                ></meter>
+              </aside>
               <div id="result" class="result" hidden>
                 <p class="eyebrow">FINISH LINE / RACE COMPLETE</p>
                 <h2 id="result-title">LAP COMPLETE</h2>
@@ -164,7 +222,37 @@
                 </button>
               </div>
             </div>
-            <div class="telemetry">
+            <div
+              id="playback-controls"
+              class="playback-controls"
+              hidden
+              aria-label="Ghost playback"
+            >
+              <div class="playback-buttons">
+                <button id="playback-play" aria-pressed="false">Play</button
+                ><button id="playback-restart">Restart</button
+                ><label for="playback-speed">Speed</label
+                ><select id="playback-speed">
+                  <option value="0.5">0.5×</option>
+                  <option value="1" selected>1×</option>
+                  <option value="2">2×</option>
+                  <option value="4">4×</option></select
+                ><output id="playback-time" for="playback-seek"
+                  >0.0 / 0.0 s</output
+                >
+              </div>
+              <label class="sr-only" for="playback-seek"
+                >Replay position in seconds</label
+              ><input
+                id="playback-seek"
+                type="range"
+                min="0"
+                max="200"
+                value="0"
+                step="0.1"
+              />
+            </div>
+            <div class="telemetry" data-race-only>
               <div class="speed-readout">
                 <strong id="speed">000</strong><span>KM/H</span>
               </div>
@@ -181,6 +269,43 @@
             </div>
           </section>
         </div>
+        <section class="analysis-panel" aria-label="Training heatmaps">
+          <div class="analysis-layers">
+            <p class="eyebrow">THE LEARNING LINE</p>
+            <div>
+              <label
+                ><input id="visits-toggle" type="checkbox" />Driving line</label
+              ><label
+                ><input id="crashes-toggle" type="checkbox" />Crash
+                locations</label
+              >
+              <label data-race-only
+                ><input id="sensors-toggle" type="checkbox" />AI vision</label
+              >
+            </div>
+            <p id="heatmap-summary" aria-live="polite">
+              50 stochastic runs per stage
+            </p>
+          </div>
+          <div class="analysis-stage">
+            <div>
+              <label for="heatmap-snapshot">HEATMAP TRAINING STAGE</label
+              ><output id="heatmap-stage" for="heatmap-snapshot">FINAL</output>
+            </div>
+            <input
+              id="heatmap-snapshot"
+              type="range"
+              min="0"
+              max="5"
+              step="1"
+              value="5"
+            />
+            <div class="scale-caption">
+              <span>FIRST ATTEMPT</span><span>LOW <i></i> HIGH (LOG)</span
+              ><span>FINAL POLICY</span>
+            </div>
+          </div>
+        </section>
         <div id="notice" role="status" aria-live="polite" class="notice">
           One lap. No shortcuts. Take the wheel when you’re ready.
         </div>

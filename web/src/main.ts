@@ -1,4 +1,6 @@
 import "./style.css";
+import { visualConfig } from "./viewer/visual-config";
+import { ViewerController } from "./viewer/controller";
 import {
   AssetLoader,
   type Snapshot,
@@ -61,6 +63,7 @@ const steps = (snapshot: Snapshot): string =>
     ? `FINAL / ${(snapshot.step / 1e6).toFixed(1).replace(/\.0$/, "")}M STEPS`
     : `${Number(snapshot.id).toLocaleString("en-US")} STEPS`;
 let loader: AssetLoader, config: SimulationConfig;
+let viewer: ViewerController | undefined;
 const tracks = new Map<string, Track>();
 let engine: RaceEngine | null = null,
   clock: FixedClock | null = null,
@@ -78,8 +81,10 @@ const scene = new RaceScene(element("canvas-host"));
 const input = new DriverInput(
   begin,
   () => {
-    engine?.respawn();
-    clock?.clear();
+    if (viewer?.mode !== "ghosts") {
+      engine?.respawn();
+      clock?.clear();
+    }
   },
   togglePause,
 );
@@ -103,6 +108,11 @@ function focusCircuit(): void {
   stage.focus({ preventScroll: true });
 }
 function begin(): void {
+  if (viewer?.mode === "ghosts") {
+    viewer.playback?.restart();
+    viewer.update();
+    return;
+  }
   if (loading || !engine || !clock) return;
   input.clear();
   clock.clear();
@@ -117,6 +127,12 @@ function begin(): void {
   );
 }
 function togglePause(): void {
+  if (viewer?.mode === "ghosts") {
+    if (viewer.playback?.playing) viewer.pause();
+    else viewer.playback?.play();
+    viewer.update();
+    return;
+  }
   if (!engine || loading) return;
   if (engine.phase === "paused") {
     engine.resume();
@@ -144,7 +160,7 @@ function error(error: unknown): void {
   notice.textContent = `${error instanceof Error ? error.message : String(error)}. Check the asset export and reload.`;
   notice.classList.add("error");
 }
-async function selectRace(): Promise<void> {
+async function selectRace(preserveRace = false): Promise<void> {
   const serial = ++loadSerial;
   loading = true;
   engine?.pause();
@@ -154,7 +170,8 @@ async function selectRace(): Promise<void> {
   pause.disabled = true;
   trackSelect.disabled = true;
   snapshotSelect.disabled = true;
-  labels["system-status"].textContent = "LOADING POLICY";
+  labels["system-status"].textContent =
+    viewer?.mode === "ghosts" ? "LOADING GHOSTS" : "LOADING POLICY";
   labels["race-state"].textContent = "LOADING";
   message("SETTING THE GRID", "Preparing your live opponent.", "NEXT RACE");
   try {
@@ -163,31 +180,45 @@ async function selectRace(): Promise<void> {
       (s) => s.id === snapshotSelect.value,
     )!;
     const track = tracks.get(trackSelect.value)!;
-    const replay = await loader.replay(snapshot, track.data.id);
-    if (serial !== loadSerial) return;
-    if (policyId !== snapshot.id) {
-      const next = await OnnxPolicy.create(await loader.bytes(snapshot.model));
-      if (serial !== loadSerial) {
-        await next.release();
-        return;
+    if (viewer?.mode !== "ghosts") {
+      const replay = await loader.replay(snapshot, track.data.id);
+      if (serial !== loadSerial) return;
+      if (policyId !== snapshot.id) {
+        const next = await OnnxPolicy.create(
+          await loader.bytes(snapshot.model),
+        );
+        if (serial !== loadSerial) {
+          await next.release();
+          return;
+        }
+        const previous = policy;
+        policy = next;
+        policyId = snapshot.id;
+        await previous?.release();
       }
-      const previous = policy;
-      policy = next;
-      policyId = snapshot.id;
-      await previous?.release();
+      if (
+        !preserveRace ||
+        !engine ||
+        engine.track.data.id !== track.data.id ||
+        engine.policy !== policy
+      ) {
+        engine = new RaceEngine(track, config, policy!);
+        clock = new FixedClock(engine);
+      }
+      ghostFrames = replay.frames;
+      // Warm up the graph before the countdown, keeping the first driving tick smooth.
+      await policy!.predict(
+        engine.observations.build(
+          engine.ai.state,
+          engine.ai.progress.projection,
+          [0, 0],
+        ),
+      );
     }
-    engine = new RaceEngine(track, config, policy!);
-    clock = new FixedClock(engine);
-    ghostFrames = replay.frames;
-    // Warm up the graph before the countdown, keeping the first driving tick smooth.
-    await policy!.predict(
-      engine.observations.build(
-        engine.ai.state,
-        engine.ai.progress.projection,
-        [0, 0],
-      ),
-    );
+    if (serial !== loadSerial) return;
     scene.setTrack(track);
+    await viewer?.setTrack(track);
+    if (serial !== loadSerial) return;
     const map = minimapPath(track);
     for (const id of ["route-preview", "minimap"])
       document.getElementById(id)!.setAttribute("viewBox", map.viewBox);
@@ -217,7 +248,22 @@ async function selectRace(): Promise<void> {
     trackSelect.disabled = false;
     snapshotSelect.disabled = false;
     start.disabled = false;
-    labels["system-status"].textContent = "LIVE POLICY READY";
+    labels["system-status"].textContent =
+      viewer?.mode === "ghosts" ? "GHOSTS READY" : "LIVE POLICY READY";
+    for (const id of ["mode-race", "mode-ghosts"])
+      element<HTMLButtonElement>(id).disabled = false;
+    if (viewer?.mode === "ghosts") {
+      center.hidden = true;
+      labels["race-state"].textContent = "REPLAY PAUSED";
+      announce(
+        "Every stage starts together. Play, change speed, or scrub through the recorded runs.",
+      );
+      return;
+    }
+    if (engine?.phase === "paused") {
+      announce("Your race is paused. Resume when you are ready.");
+      return;
+    }
     announce(
       matchMedia("(max-width:720px)").matches
         ? "Connect a keyboard or gamepad to drive. Your circuit is ready."
@@ -228,8 +274,22 @@ async function selectRace(): Promise<void> {
   }
 }
 function updateHud(): void {
-  if (!engine || loading) return;
+  if (!engine || loading || viewer?.mode === "ghosts") return;
   const phase = engine.phase;
+  const showSensors = element<HTMLInputElement>("sensors-toggle").checked;
+  element("ai-inspector").hidden = !showSensors;
+  scene.showSensors = showSensors;
+  if (showSensors) {
+    const [steer, throttle] = engine.controls;
+    element<HTMLMeterElement>("ai-steer").value = steer;
+    element<HTMLMeterElement>("ai-throttle").value = throttle;
+    element("ai-steer-value").textContent = steer.toFixed(2);
+    element("ai-throttle-value").textContent = throttle.toFixed(2);
+    element("ai-value").textContent = engine.value.toFixed(2);
+    element<HTMLMeterElement>("ai-value-meter").value = Math.tanh(
+      engine.value / visualConfig.criticValueScale,
+    );
+  }
   labels["race-state"].textContent = {
     ready: "GRID READY",
     countdown: "START SEQUENCE",
@@ -350,7 +410,20 @@ async function frame(now: number): Promise<void> {
   const elapsed = Math.max(0, (now - lastFrame) / 1000);
   lastFrame = now;
   try {
-    if (engine && clock && !loading) {
+    if (!loading && viewer?.mode === "ghosts" && viewer.playback) {
+      viewer.advance(Math.min(elapsed, 0.1));
+      scene.renderGhosts(viewer.playback);
+      if (now - lastHud > 30) {
+        viewer.update();
+        lastHud = now;
+        labels["race-state"].textContent =
+          viewer.playback.seconds === viewer.playback.duration
+            ? "REPLAY COMPLETE"
+            : viewer.playback.playing
+              ? "REPLAY PLAYING"
+              : "REPLAY PAUSED";
+      }
+    } else if (engine && clock && !loading) {
       stepping = clock.advance(elapsed, input.action());
       await stepping;
       stepping = null;
@@ -396,11 +469,57 @@ snapshotSelect.addEventListener("change", () => void selectRace());
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) {
     engine?.pause();
+    viewer?.pause();
     clock?.clear();
     input.clear();
     lastPhase = "";
   }
 });
+async function changeMode(mode: "race" | "ghosts"): Promise<void> {
+  if (!viewer || loading || viewer.mode === mode) return;
+  engine?.pause();
+  viewer.pause();
+  input.clear();
+  clock?.clear();
+  viewer.mode = mode;
+  document.body.dataset.mode = mode;
+  element("ai-inspector").hidden = true;
+  document.querySelector(".intro-note")!.innerHTML =
+    mode === "ghosts"
+      ? "Six stages. One start.<br>Watch a racing line emerge."
+      : "It learned from zero.<br>Now it’s your turn to drive.";
+  document.querySelector(".intro .eyebrow")!.textContent =
+    mode === "ghosts"
+      ? "FROM THE FIRST ATTEMPT TO THE FINAL POLICY."
+      : "BUILT TO LEARN. READY TO RACE.";
+  document.querySelector(
+    ".setup>.section-label span:first-child",
+  )!.textContent = mode === "ghosts" ? "REPLAY SETUP" : "RACE SETUP";
+  for (const item of document.querySelectorAll<HTMLElement>("[data-race-only]"))
+    item.hidden = mode === "ghosts";
+  element("ghost-sidebar").hidden = mode !== "ghosts";
+  element("playback-controls").hidden = mode !== "ghosts";
+  for (const name of ["race", "ghosts"])
+    element(`mode-${name}`).setAttribute("aria-pressed", String(mode === name));
+  document.querySelector("h1")!.innerHTML =
+    mode === "ghosts"
+      ? "FROM ZERO. <span>TO</span> THE LINE"
+      : "HUMAN <span>VS.</span> MACHINE";
+  document.querySelector(".circuit-bar .divider + span")!.textContent =
+    mode === "ghosts" ? "TRAINING REPLAYS" : "TIME ATTACK";
+  scene.app.canvas.setAttribute(
+    "aria-label",
+    mode === "ghosts"
+      ? "Synchronized ghost replays, colored from early blue policies to the final orange policy."
+      : "Race circuit. Your car is mint; the live AI is orange.",
+  );
+  await selectRace(mode === "race");
+}
+element("mode-race").addEventListener("click", () => void changeMode("race"));
+element("mode-ghosts").addEventListener(
+  "click",
+  () => void changeMode("ghosts"),
+);
 async function boot(): Promise<void> {
   try {
     [loader] = await Promise.all([
@@ -413,6 +532,7 @@ async function boot(): Promise<void> {
       scene.init(),
     ]);
     config = await loader.simulation();
+    viewer = new ViewerController(loader, scene, announce);
     for (const descriptor of loader.manifest.tracks) {
       const track = await loader.track(descriptor.id);
       tracks.set(descriptor.id, track);

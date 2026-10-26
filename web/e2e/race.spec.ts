@@ -75,6 +75,14 @@ test("race controls, countdown, pause, restart and responsive layout", async ({
 test("render frame timing during live inference", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("#start-button")).toBeEnabled({ timeout: 30000 });
+  await page.locator("#visits-toggle").check();
+  await page.locator("#crashes-toggle").check();
+  await page.locator("#sensors-toggle").check();
+  await page.locator("#heatmap-snapshot").focus();
+  await page.keyboard.press("Home");
+  await expect(page.locator("#heatmap-summary")).toContainText(
+    "50 runs · 50 crashes",
+  );
   await page.locator("#start-button").click();
   await expect(page.locator("#race-state")).toHaveText("RACE IN PROGRESS", {
     timeout: 5000,

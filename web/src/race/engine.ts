@@ -16,6 +16,8 @@ export class RaceEngine {
   raceTicks = 0;
   inferences = 0;
   value = 0;
+  lastObservation: number[] = [];
+  observationState: CarState;
   aiLapTime: number | null = null;
   playerLapTime: number | null = null;
   previousPlayer: CarState;
@@ -36,6 +38,7 @@ export class RaceEngine {
     this.observations = new ObservationBuilder(track, config.observation);
     this.previousPlayer = this.player.state;
     this.previousAi = this.ai.state;
+    this.observationState = this.ai.state;
   }
   start(): void {
     this.reset();
@@ -51,6 +54,8 @@ export class RaceEngine {
     this.aiLapTime = null;
     this.playerLapTime = null;
     this.value = 0;
+    this.lastObservation = [];
+    this.observationState = this.ai.state;
     this.countdownTicks = 0;
     this.playerSplits.clear();
     this.aiSplits.clear();
@@ -76,6 +81,9 @@ export class RaceEngine {
     this.player.respawn();
     this.previousPlayer = this.player.state;
     this.playerAction = [0, 0];
+  }
+  get controls(): Action {
+    return [...this.aiAction];
   }
   get countdown(): number {
     return Math.ceil(this.countdownTicks * this.config.physics.dt);
@@ -123,6 +131,7 @@ export class RaceEngine {
     const generation = this.generation;
     if (this.raceTicks % this.config.physics.action_repeat === 0) {
       if (this.aiLapTime === null) {
+        const observedState = this.ai.state;
         const raw = this.observations.build(
           this.ai.state,
           this.ai.progress.projection,
@@ -130,6 +139,8 @@ export class RaceEngine {
         );
         const prediction = await this.policy.predict(raw);
         if (this.generation !== generation || this.phase !== "racing") return;
+        this.lastObservation = raw;
+        this.observationState = observedState;
         this.aiAction = prediction.action;
         this.value = prediction.value;
         this.inferences++;

@@ -40,7 +40,7 @@ the game; it does not replay recorded controls or positions.
 | Track | Python mean-policy lap | Browser live-policy lap | Difference |
 | --- | ---: | ---: | ---: |
 | Broad Sweep | 24.246155 s | 24.225082 s | 0.0869% |
-| Fast Ribbon | 24.591262 s | 24.652338 s | 0.2484% |
+| Long Ribbon | 24.591262 s | 24.652338 s | 0.2484% |
 | Technical Loop | 19.812376 s | 19.621723 s | 0.9623% |
 
 All differences are below the required **2%**. Browser inference counts equal

@@ -1,339 +1,228 @@
-# Racing RL
+# Reinforced Racing
 
-A deterministic 2D racing simulation with arcade bicycle physics and seeded tracks.
-**M1–M5 are implemented:** manual driving, seeded tracks, batched RL environments,
-PPO from scratch, exported ghosts/heatmaps, simulation parity, and a static browser
-race against a live ONNX AI. See [spec.md](spec.md) for the remaining M6 milestone.
+A 2D racing game where a car learns to drive through a **PPO implementation written
+from scratch**. Race its live policy in your browser, compare ghosts from six stages
+of training, and inspect where stochastic policies drive and crash. Everything runs
+locally or as a static site; the game has no backend, accounts, or external art assets.
 
-## Run
+![Six training stages with driving-line and crash heatmaps](docs/images/m6-ghosts.png)
 
-Install [uv](https://docs.astral.sh/uv/getting-started/installation/) and Node.js 22+
-(with npm), then:
+## Run it
 
-```sh
-make setup
-make drive
-```
-
-`uv` manages the Python environment and dependencies. The project defaults to Python 3.12;
-uv can download it if needed. A desktop display is required for interactive driving.
-
-| Input | Action |
-| --- | --- |
-| W / Up | Accelerate |
-| S / Down / Space | Brake; reverse when nearly stopped |
-| A / Left, D / Right | Steer left/right |
-| R | Instantly respawn at the last checkpoint |
-| Enter | Restart the session and timer |
-| Escape | Quit |
-
-Steering ramps in rather than snapping to full lock. Brake for tight bends; use short
-steering presses at speed and countersteer if the rear slides. Crashes freeze the car
-for 0.5 simulation seconds, then respawn with zero velocity. Lap timing includes this delay.
-The first timer starts when the session opens; press Enter for a fresh attempt.
-
-```sh
-make drive ARGS="--showcase ribbon"       # sweep (default), ribbon, technical
-make drive ARGS="--seed 42"              # reproducible generated track
-make drive ARGS="--export-track artifacts/my.track.v1.json"
-make drive ARGS="--track artifacts/my.track.v1.json"
-make tracks                              # export all three showcases
-make tracks ARGS="--seed 42 --output artifacts/custom"
-```
-
-Exports are written to `artifacts/tracks/` by default and are intentionally ignored by Git.
-No server or external art assets are needed.
-
-## Verify
-
-```sh
-make test
-make drive ARGS="--headless --steps 600 --screenshot artifacts/m1-drive.png"
-```
-
-`make test` checks Ruff lint/format, pytest, TypeScript types and Vitest, including track rejection and
-serialization, progress in both directions, interpolated lap timing, crash/respawn,
-determinism, tire saturation and recovery, complete driven laps on all showcases,
-and a headless pygame smoke check. The headless CLI uses scripted controls and SDL's
-dummy video driver; it is suitable for CI and does not need a display.
-
-With the default physics, a straight-line simulation reaches **100 km/h in 2.98 s**
-and settles at **74.38 m/s**. These are simulation measurements, not wall-clock benchmarks.
-The tests enforce the specification's acceleration/top-speed ranges. M2 checks also run
-Gymnasium's environment checker, compare scalar and batched physics over 600 ticks,
-compare grid rays against full-boundary intersections, and cover episode limits,
-reward terms, deterministic track assignment, autoreset, and terminal observations.
-
-## RL environments (M2)
-
-```python
-import numpy as np
-from sim.env import RaceEnv
-from sim.vec_env import VecRaceEnv
-from sim.pool import make_track_pool
-
-# Quick defaults use the three showcase tracks.
-env = RaceEnv()
-observation, info = env.reset(seed=42)
-observation, reward, terminated, truncated, info = env.step(np.array([0.0, 1.0]))
-if terminated or truncated:
-    observation, info = env.reset()
-env.close()
-
-# Build static geometry/grid once, then simulate 64 cars in NumPy batches.
-pool = make_track_pool("training")  # 200 generated tracks; held_out has 50 separate seeds.
-envs = VecRaceEnv(64, pool)
-observations, info = envs.reset(seed=42)
-observations, rewards, terminated, truncated, info = envs.step(np.zeros((64, 2)))
-envs.close()
-```
-
-Actions are `[steer, throttle]`; shapes are `(2,)` and `(N, 2)`. Observations are
-float64 with shapes `(22,)` and `(N, 22)`. The exact `obs.v1` layout, normalization,
-signs, and terminal-observation contract are in [sim/OBSERVATION.md](sim/OBSERVATION.md).
-The spec's listed components sum to 21; the 22nd value exposes the steering actuator.
-
-Rewards sum four individually logged weighted terms from `configs/reward.yaml`:
-`0.1 × delta_progress`, `−0.001` time pressure, `−10` crash, and `+5` per completed lap.
-Crashes terminate; reaching two laps or 6000 agent steps truncates. Limits live in
-`configs/env.yaml`. Info includes progress, lap count/timing, wrong-way status,
-physics/agent step counts, episode return, and `reward_terms`; finished episodes also
-include an `episode` summary and accumulated reward terms.
-
-`RaceEnv` requires explicit reset after finishing. `VecRaceEnv` resets finished cars
-immediately, drawing tracks uniformly from its pool. Returned observations for these
-cars belong to the next episode. Use `info["final_obs"]` and `info["_final_obs"]` for
-the previous episode's terminal observations; truncated transitions must bootstrap
-from those terminal observations. Root info describes the transition just taken.
-Always call `reset(seed=...)` before stepping. The same seed, ordered pool, batch size,
-and actions reproduce track selection and transitions, including autoresets.
-
-For fixed evaluation tracks, construct `TrackPool([track])`, or select the initial
-track using `reset(options={"track_index": i})` on RaceEnv / `track_indices` on VecRaceEnv.
-Environments are headless; use `make drive` for pygame keyboard driving.
-
-## Throughput
-
-```sh
-make benchmark
-make benchmark ARGS="--output artifacts/m2-benchmark.json"
-```
-
-The benchmark uses 64 cars, 64 generated training tracks, 100 warmup batches, and
-three samples of 1000 batches. One agent step means **one car taking an action for
-up to two physics ticks**, so a vector call contains 64 agent steps. Timing includes
-physics, local projection, grid-based rays, observations, rewards, info, and same-step
-autoreset. Pool generation/grid construction and action generation are excluded and
-setup time is reported separately. Runtime controls are seeded and held for eight
-agent steps, allowing cars to accelerate, crash, and exercise resets.
-
-The recorded measurement on this host (Intel Core i5-11400F, Python 3.12.13, NumPy 2.5.4)
-was **13,755 agent steps/s** (sample rates 13,819 / 13,755 / 13,709), above the 10,000
-target. There were 711 / 714 / 729 autoresets; pool/grid setup took 11.11 s. Full results
-are saved in [docs/m2-benchmark.json](docs/m2-benchmark.json). This is a desktop CPU
-measurement; performance on a particular laptop still needs measuring.
-
-## Train PPO (M3)
+Requires Python 3.11+ (3.12 is the default), [uv](https://docs.astral.sh/uv/), and
+Node.js 22.12+ with npm. The first setup installs both locked dependency sets.
 
 ```sh
 make setup
-make train
-make train ARGS="--run-dir artifacts/training/my-run --device cpu"
-make train ARGS="--run-dir artifacts/training/my-run --resume artifacts/training/my-run/latest.pt"
-uv run tensorboard --logdir artifacts/training
+make export       # use the retained reference checkpoints, if present
+make web-dev      # open the localhost URL printed by Vite
 ```
 
-`configs/ppo.yaml` contains all algorithm and curriculum settings. The default uses
-64 cars × 256 steps, ten epochs/four minibatches, separate two-layer 256-unit tanh
-actor/critic networks, Gaussian actions, a 6M-step budget, and Adam at 3e-4 with linear annealing.
-Device auto-selection is CUDA → Apple MPS → CPU. Try `--device cpu`: CPU is usually
-fastest for networks this small, though hardware and minibatch size affect results.
-
-Training starts on the `sweep` showcase. Every ten updates an independent eight-run
-stochastic evaluation checks the first lap. After at least 200k agent steps and ≥95%
-success, training switches to the full 200-track pool. This transition preserves
-the policy, optimizer, running statistics, and global step. A run that never passes
-this gate remains on the single track; reaching its step budget does not mean M3's
-learning criteria have been met.
-
-`train/ppo.py` implements the clipped surrogate, optional clipped value loss, GAE,
-minibatch advantage normalization, entropy bonus, and gradient norm clipping without
-an RL framework. Actions are sampled from a Gaussian with learned state-independent
-log standard deviation; likelihoods use the original samples and only the actions
-sent to the environment are clipped. GAE bootstraps truncations from `final_obs`,
-cuts recursion at every episode boundary, and never bootstraps a crash.
-
-Running mean/variance normalizes observations. Rewards are divided by the standard
-deviation of discounted returns, without subtracting a reward mean. Evaluation freezes
-statistics and reports original, unscaled episode rewards. TensorBoard and JSONL
-logs include episode returns/laps, best lap time, crash rate, reward terms, policy/value
-losses, entropy/log_std, KL, clip fraction, explained variance, throughput, observation
-ranges, and action clipping. The simulation remains float64; the networks use float32.
-
-Checkpoints are atomic writes under the run directory. `latest.pt` and numbered
-`checkpoints/` files contain model/Adam state, observation/return statistics, RNG states,
-live vector-environment state, versions, and configuration. Resume rejects changed
-geometry or simulation settings. Exact uninterrupted-vs-resumed training is tested
-on CPU and on CUDA when available. To increase a run's budget, add `--total-timesteps`;
-that extends the linear learning-rate horizon and is a deliberate continuation change.
-`--updates 3` stops after three additional updates and writes a resumable checkpoint.
-
-Scheduled policy snapshots are stored in `snapshots/` for steps 0, 50k, 200k, 1M, 3M,
-and `final`. They include both normalizers and are intentionally separate from resumable
-checkpoints. A threshold is captured at the first vector batch that reaches it (50k is
-captured at 50,048 with 64 cars); metadata records both requested and actual step counts.
-The policy stays fixed during a rollout, while its observation statistics continue to
-update. Full training stops at a rollout boundary and can slightly exceed the budget.
-
-## Evaluate policies
+**Checkpoints and generated assets are not stored in Git.** This workspace's reference
+run is `artifacts/training/m3-seed2`, selected in `configs/export.yaml`. On a fresh
+checkout, train a complete run before exporting:
 
 ```sh
-make eval                                # M4: all snapshots, replays and heatmaps
-make eval ARGS="--run-dir artifacts/training/my-run"
-make eval ARGS="--checkpoint artifacts/training/my-run/latest.pt --runs 5"
-make eval ARGS="--checkpoint artifacts/training/my-run/latest.pt --deterministic --runs 1"
-make eval ARGS="--checkpoint artifacts/training/my-run/latest.pt --snapshots --runs 5"
-```
-
-The M3 evaluator prints lap completion, crash rate, and mean/best lap time per snapshot
-for the three showcases and 50 held-out tracks, with per-track/per-episode JSON results
-in `artifacts/evaluation/`. `--runs` is the number of trials **per track**. Default trials
-sample the Gaussian policy; `--deterministic` uses its mean, as the eventual browser
-opponent will. Each trial starts from rest at the start line and stops at its first
-completed lap, crash, or the configured step limit. It never trains on held-out tracks
-or updates running statistics. A timeout counts as an unsuccessful lap; lap times only
-summarize successful trials. The default M4 pipeline also records deterministic ghosts and stochastic heatmaps; explicit `--checkpoint` commands retain the summary-only evaluator.
-
-The measured reference runs started with the saved 3M-step baseline configurations
-and resumed to 6M after diagnosing insufficient training on the larger pool. To
-reproduce that exact schedule (rather than a fresh run with a 6M annealing horizon):
-
-```sh
-make train ARGS="--config experiments/m3-baseline-seed1.yaml --run-dir artifacts/training/reproduce-seed1"
-make train ARGS="--run-dir artifacts/training/reproduce-seed1 --resume artifacts/training/reproduce-seed1/latest.pt --total-timesteps 6000000"
-```
-
-Use `m3-baseline-seed2.yaml` and a separate directory for the second seed. See
-[experiments/m3-diagnosis.json](experiments/m3-diagnosis.json) for the signal checks
-and the one-setting budget change. The default budget was raised to 6M after this
-comparison; learning results remain something to measure, not assume from finite losses.
-
-The validated reference is `artifacts/training/m3-seed2/latest.pt` (6,012,928 steps):
-**98.7% showcase completion** over 150 stochastic trials and **85.2% held-out completion**
-over 250 trials, exceeding M3's 95% / 80% targets. Mean-action evaluation completes all
-three showcases and 43/50 held-out tracks. Measured rollout/update time was **9.81 min**
-on an RTX 3060 Ti; startup, pool generation and evaluation are excluded. Seed 1 also
-passes the stochastic targets but has a deterministic technical-track regression,
-so seed 2 is the reference for future browser work.
-
-See [experiments/M3_RESULTS.md](experiments/M3_RESULTS.md) for both seeds, per-track
-lap times, failure counts, experiment conditions, hashes, and raw results. To inspect
-the retained reference directly:
-
-```sh
-make eval ARGS="--checkpoint artifacts/training/m3-seed2/latest.pt --showcase-only --runs 50"
-make eval ARGS="--checkpoint artifacts/training/m3-seed2/latest.pt --runs 5"
-```
-
-## Export models and browser data (M4)
-
-Requires Node.js 22+ and npm in addition to Python/uv. `make setup` installs both
-locked dependency sets. The default source is the retained, validated seed-2 run;
-for a clean checkout, train a complete run first and pass its directory.
-
-```sh
-make setup
-make eval                                # all six snapshots; can take several minutes
-make export                              # verified cache reuse, ONNX + static bundle
+make train ARGS="--run-dir artifacts/training/my-run"
 make export ARGS="--run-dir artifacts/training/my-run"
-make parity                              # regenerate committed Python truth fixtures
-make test                                # Python + TypeScript parity and asset checks
+make web-dev
 ```
 
-Export produces `web/public/assets/manifest.json`, simulation settings, three tracks,
-six ONNX policies, 18 quantized/delta ghosts, and 18 sparse heatmaps (50 stochastic
-runs each). Every asset has a size/hash descriptor, and the loader rejects incompatible
-physics/obs/track/replay/heatmap versions before fetching dependent files. The bundle
-is self-contained. Generated models/evaluations/bundles are ignored; preserve the
-training checkpoints to rebuild them. The race interface uses this bundle directly.
+Training is actual PPO optimization, not a download or placeholder; it needs a
+suitable CPU/GPU and learning results depend on the seed and training schedule.
+The measured reference used seed 2, a 3M-step baseline, then continuation to 6M.
+Use [the reproduction commands](docs/DEVELOPMENT.md#evaluate-policies) and
+[experiment notes](experiments/M3_RESULTS.md) to reproduce that schedule.
 
-ONNX accepts raw float64 `[batch,22]` observations and includes frozen normalization.
-It returns float32 policy means and critic values. Export checks both against PyTorch
-at ≤1e-5, including single-car batches. Each showcase fixture tests 600 ticks of
-float64 TypeScript physics/observations and integrated crash/respawn sessions at ≤1e-6.
-See [docs/ASSETS.md](docs/ASSETS.md) for schemas, replay decoding, heatmap conventions,
-cache integrity, parity coverage and limitations.
+For the standalone Python driving/debug view, use `make drive`. All simulation,
+reward, training and export tuning lives in `configs/*.yaml`.
 
-## Race the live AI (M5)
+## Race the AI
 
-![Live race against the ONNX opponent](docs/images/m5-race.png)
+Choose a circuit and opponent snapshot, then **Take the wheel**. The orange car runs
+ONNX inference every two physics ticks; it is a live simulation. Mint is your car.
+There is a countdown, one-lap timer, checkpoint splits against the AI, smooth follow
+camera, speed zoom, minimap, finish result and rematch. Cars pass through each other.
+The optional reference ghost is a separate recorded overlay.
+
+| Controls | Action |
+| --- | --- |
+| WASD / arrows | Steer, accelerate, brake/reverse |
+| Space | Brake/reverse |
+| R | Return to the last checkpoint; lap time keeps running |
+| Enter | Restart with a fresh countdown |
+| Escape | Pause / resume; lap time stops |
+| Standard gamepad | Left stick steers; right/left triggers accelerate/brake |
+
+Small screens have a responsive layout and require a keyboard or gamepad. Held keys
+clear on window blur; hiding the browser tab pauses the race/playback. Switching to
+ghosts pauses your race; returning to the same circuit/opponent preserves it. Early snapshots
+can stall or crash because they have not learned to drive yet.
+
+**AI vision** draws the last nine sensor rays and displays steering, throttle/brake,
+and the critic's expected-return estimate. The value uses training reward units;
+it is not a lap-time estimate or win probability. Its display meter uses tanh(value/10);
+the adjacent number is the raw output. Tire marks appear during lateral
+slip, with a bounded, lightweight drift-particle effect disabled for reduced motion.
+
+## Watch it learn
+
+**Watch it learn** starts every recorded snapshot at the same start time. Blue marks
+early policies, green the middle stages, and orange the final policy. Each car is
+labeled with its training count. Play/pause, 0.5× / 1× / 2× / 4× speed, restart and a
+scrubber share one playback clock. Each ghost holds its last pose when it finishes,
+crashes, or reaches the time limit; its outcome stays visible in the stage legend.
+The initial 0-step ghost lasts 200 seconds, so seeking is useful for later comparisons.
+
+In either view, toggle **Driving line** and **Crash locations**, then move the
+**Heatmap training stage** slider. These layers aggregate **50 stochastic trials**
+per showcase/stage; the ghosts are separate deterministic mean-policy runs.
+Visitation uses exact 0.5 m cells. Crash density and actual crash points use red.
+Log intensity is normalized against one peak across all snapshots of that track,
+so the slider remains comparable; each track gets its own scale. Empty crash layers
+are transparent and explicitly report zero crashes. The selected heatmap stage is
+independent of the live opponent and replay time. It does not load another model.
+
+## How it works
+
+```mermaid
+flowchart LR
+    Config[Typed YAML configs] --> Sim[Python float64 simulation]
+    Sim --> PPO[From-scratch PPO / PyTorch]
+    PPO --> Snap[Policy snapshots + frozen normalizers]
+    Sim --> Tracks[Seeded track geometry]
+    Snap --> Eval[Deterministic + stochastic evaluation]
+    Eval --> Data[Replays + heatmaps]
+    Snap --> ONNX[ONNX mean policy + critic]
+    Tracks --> Package[Versioned asset package]
+    Data --> Package
+    ONNX --> Package
+    Package --> Manifest[Static manifest + hashes]
+    Manifest --> Web[Vite + TypeScript + PixiJS]
+    Web --> Runtime[Float64 physics + ONNX WASM / 30 Hz]
+    Web --> Viewer[Synchronized ghosts + heatmap textures]
+    Sim --> Gold[600-tick golden fixtures]
+    Gold --> Parity[Vitest numeric parity]
+```
+
+Physics advances at 60 Hz; controls update at 30 Hz. Rendering uses an accumulator
+and interpolation, while camera effects never affect simulation. Long stalls cap
+catch-up instead of changing dt. Python and TypeScript share physics/track/observation
+version identifiers, and browser loaders reject incompatible versions and verify
+asset hashes. ONNX embeds frozen observation normalization and accepts raw float64
+`obs.v1` vectors, returning float32 mean controls and critic values.
+
+| Location | Purpose |
+| --- | --- |
+| `sim/`, `web/src/sim/` | Authoritative Python simulation and float64 browser port |
+| `train/ppo.py`, `configs/ppo.yaml` | PPO, logging, curriculum, checkpoints and snapshots |
+| `eval/`, `export/` | Trial recording, heatmap aggregation, ONNX and asset packaging |
+| `web/src/race/` | Live race, input, policy inference, camera and PixiJS scene |
+| `web/src/viewer/` | Shared replay clock, stage labels, heatmap rasterization/control |
+| `tests/fixtures/parity/`, `web/tests/`, `web/e2e/` | Golden, unit and real-browser checks |
+
+Detailed contracts are in [observation layout](sim/OBSERVATION.md),
+[asset formats and parity](docs/ASSETS.md), and [development reference](docs/DEVELOPMENT.md).
+Ambiguity resolutions and milestone boundaries are recorded in [DECISIONS.md](DECISIONS.md).
+
+## Measured results
+
+Reference policy: seed 2, **6,012,928** agent steps, trained on the configured 200-track
+pool after its single-track curriculum. Held-out tracks were excluded from training.
+
+| Evaluation | Result |
+| --- | --- |
+| Showcase completion, 50 stochastic trials × 3 tracks | **148/150 — 98.7%** |
+| Held-out completion, 5 trials × 50 tracks | **213/250 — 85.2%** |
+| Measured training rollout/update time | **9.81 min**, RTX 3060 Ti |
+| Native 64-car environment throughput | **13,755 agent steps/s**, i5-11400F |
+| Python/TypeScript golden state + observation error | **≤5.41e-13**, required ≤1e-6 |
+| ONNX/PyTorch maximum output error | **≤1.91e-6**, required ≤1e-5 |
+
+| Deterministic showcase lap | Python | Live browser WASM | Difference |
+| --- | ---: | ---: | ---: |
+| Broad Sweep | 24.246155 s | 24.225082 s | 0.0869% |
+| Long Ribbon | 24.591262 s | 24.652338 s | 0.2484% |
+| Technical Loop | 19.812376 s | 19.621723 s | 0.9623% |
+
+All browser lap differences are below the required 2%. Closed-loop paths are not
+bit-identical; see [M5 validation](docs/M5_RESULTS.md) for trajectory diagnostics and
+measurement conditions. The M5 software-rendered Chromium test sustained about
+60 FPS at 1440×1050 with a 16.7–16.8 ms p95 frame interval. M6 measured **59.60 FPS /
+16.70 ms p95** with both heatmaps and AI vision enabled; its overlay/production
+checks are recorded in [M6 validation](docs/M6_RESULTS.md). These are host measurements,
+not an assertion about untested laptop hardware.
+
+Training time excludes startup, geometry, evaluation and checkpoint writes. A fresh
+6M run has a different learning-rate history from the measured 3M→6M continuation.
+Full evidence: [training results](experiments/M3_RESULTS.md),
+[benchmark](docs/m2-benchmark.json), [export validation](docs/m4-validation.json),
+[browser results](docs/m5-browser-results.json).
+
+## Verify and build
 
 ```sh
-make web-dev                       # localhost Vite server; requires make export first
-make web-build                     # static site in web/dist/
-cd web && npm run test:e2e          # requires npx playwright install chromium once
+make test                                      # Ruff, pytest, strict TS, Vitest
+make parity                                    # regenerate Python golden fixtures
+make eval                                      # all snapshots, showcase + held-out
+make web-build                                 # self-contained web/dist/
+npm run --prefix web preview                    # inspect the production build
+# Install the browser once for acceptance checks:
+cd web && npx playwright install chromium
+npm run test:e2e                                # live WASM, controls, playback, overlays
+npm run test:static                             # build + repository-prefix static check
 ```
 
-Choose a circuit and opponent stage, then take the wheel. Arrow keys/WASD drive;
-Space brakes/reverses, R respawns, Enter restarts, and Escape pauses. Standard gamepad
-stick/triggers are supported. The AI runs its ONNX policy every two physics ticks;
-the optional reference ghost is an independent overlay. Countdown, checkpoint splits,
-follow camera, minimap, first-lap results and rematches are included.
+The browser suites need a complete export. The Python/TS unit suites can run on a
+clean checkout; the existing full-bundle integrity test skips until assets exist.
+Simulation behavior is unchanged through M6; physics, observation and track versions
+remain v1. PyTorch emits a deprecation notice for the explicit TorchScript ONNX
+exporter; its outputs are checked against ONNX Runtime before packaging.
 
-The live browser final policy completes all showcases with lap times **0.087% / 0.248% /
-0.962%** from Python evaluation (required: ≤2%). The measured software-rendered Chromium
-sample sustained **60 FPS**, p95 **16.8 ms**, on this desktop host. See
-[docs/M5_RESULTS.md](docs/M5_RESULTS.md) for conditions, commands, timings and limits.
+## Deploy to GitHub Pages
 
-## Code and data
+Run `make web-build` and publish the **contents of `web/dist/`** as the site root.
+The output includes all models, replays, heatmaps, fonts and WASM; no application
+server, CDN or isolation headers are needed. Relative Vite paths support both
+`https://user.github.io/` and `https://user.github.io/repository/` without changing
+source. `.nojekyll` is included for branch-based publication.
 
-| Location | Responsibility |
-| --- | --- |
-| `sim/config.py`, `configs/*.yaml` | Validated dataclasses and all simulation tuning |
-| `sim/physics.py` | Tire forces, steering actuator, longitudinal forces, fixed-step integration |
-| `sim/geometry.py`, `sim/track.py` | Seeded spline tracks, resampling, validation, JSON |
-| `sim/progress.py` | Local projection, signed offset, unwrapped progress, checkpoints/laps |
-| `sim/session.py` | Play/training crash behavior and deterministic session clock |
-| `sim/pool.py`, `sim/raycast.py` | Shared static geometry and batched grid traversal |
-| `sim/observation.py`, `sim/reward.py` | Versioned observations and weighted reward terms |
-| `sim/env.py`, `sim/vec_env.py` | Scalar Gymnasium and native batched environments |
-| `tools/debug_drive.py` | Keyboard controls and pygame rendering |
-| `tools/export_tracks.py` | Track-only JSON export |
-| `tools/benchmark.py` | Full-transition CPU throughput measurement |
-| `train/config.py`, `configs/ppo.yaml` | Typed PPO, normalization, curriculum and snapshot settings |
-| `train/ppo.py` | Single-file PPO, logging, checkpoint/resume and curriculum loop |
-| `eval/evaluate.py`, `eval/artifacts.py` | Frozen-policy evaluation and verified snapshot pipeline |
-| `eval/record.py`, `eval/formats.py` | Per-tick recording, quantized ghosts and sparse heatmaps |
-| `export/onnx.py`, `export/assets.py` | Normalized ONNX policy graphs and versioned static packaging |
-| `web/src/sim/`, `web/src/assets/` | Float64 browser simulation and strict asset loaders |
-| `web/src/race/`, `web/src/main.ts` | Live race engine, WASM policy, PixiJS scene, input and interface |
-| `tools/generate_parity.py`, `tests/fixtures/parity/` | Python truth for 600-tick Vitest parity checks |
+For branch publication, put the compiled files in the chosen publishing branch's
+root and select that branch/root in repository **Settings → Pages**. For Actions,
+upload the prepared directory using `actions/upload-pages-artifact` and deploy with
+`actions/deploy-pages`; preserve the generated export when preparing that artifact.
+See GitHub's [publishing-source instructions](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site)
+and [static-site / .nojekyll guidance](https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site).
+The repository intentionally does not auto-deploy or train on push: model artifacts
+are generated locally and excluded from Git. No changes to source files are required
+to host the resulting `dist` directory.
 
-Simulation uses SI units, positive-left steering and a y-up world. Physics advances at
-1/60 s with semi-implicit Euler; controls update every two ticks. Rendering and wall
-time never enter the simulation. The model uses front/rear linear slip forces clamped
-at separate friction limits, speed-dependent engine/steering, drag, rolling resistance,
-and low-speed reverse. `CarState.steering` holds the actuator's normalized input.
-Current physics version: `physics.v1`.
+## GIF recording placeholders
 
-Track files declare `version: "track.v1"` and contain `id`, `name`, `seed`, `width`,
-`centerline`, `arc_length`, `tangents`, `curvature`, `left`, `right`, and `checkpoints`.
-Closed polylines have N points with no duplicate final point; `arc_length` has N+1
-entries including the closing segment. Checkpoints are arc lengths at 25 m intervals,
-starting at zero. Sampling wraps across the finish. JSON loading checks the version,
-finite geometry, derived arrays, and track validity, preserving exported numbers.
-The browser loads this geometry directly instead of regenerating it.
+These slots intentionally await real recordings; no GIF footage is fabricated.
 
-## Scope and open issues
+| Slot | Save as | What to record |
+| --- | --- | --- |
+| Live race | `docs/media/race.gif` | Countdown, a corner with the orange AI, and a split |
+| Learning time-lapse | `docs/media/ghosts.gif` | Watch it learn at 2×, from a common start to diverging lines |
+| Heatmap evolution | `docs/media/heatmaps.gif` | Pause the ghosts, enable both layers, slide from 0 to final |
 
-M1–M5 are implemented. M6's time-lapse, heatmap visualization and final polish remain.
-`make web-build` produces the static race app; M1 track-only export remains `make tracks`.
-Browser lap-time parity and frame timing pass on the measured host, with laptop,
-physical gamepad and subjective keyboard playtesting still open.
-The explicit TorchScript ONNX exporter emits a PyTorch deprecation notice; graphs
-are numerically verified with ONNX Runtime before publication.
+Start `make web-dev`, use your OS/browser screen recorder for a 5–8 second clip,
+and save the capture as `recording.webm` (or substitute your captured video format).
+Keep the circuit and relevant controls visible; avoid cropping away the stage label.
+If ffmpeg is available, convert the recording with:
 
-Automated checks establish the numeric driving targets and recoverable sliding;
-subjective keyboard feel still needs human playtesting. Pygame rendering stays at
-debug quality; the browser uses the PixiJS race interface. See [DECISIONS.md](DECISIONS.md) for ambiguity resolutions, including
-the literal half-car-width wall threshold and deferred browser parity work.
+```sh
+mkdir -p docs/media
+ffmpeg -i recording.webm -vf 'fps=15,scale=960:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse' -loop 0 docs/media/ghosts.gif
+```
+
+Replace the slot with a normal Markdown image when the real GIF is recorded.
+
+## Scope and open checks
+
+M1–M6 are implemented. This MVP deliberately excludes online racing, accounts, 3D,
+a track editor, surfaces/boost pads and car-to-car collision. Physical gamepad use,
+subjective keyboard feel, and performance on an actual mid-range laptop still need
+human/hardware checks. Small screens require a keyboard or gamepad. The trained
+reference artifacts must be retained or regenerated to rebuild the static bundle.

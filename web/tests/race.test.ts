@@ -41,6 +41,8 @@ describe("live race engine", () => {
     expect(engine.inferences).toBe(3);
     expect(engine.ai.ticks).toBe(5);
     expect(engine.value).toBe(3);
+    expect(engine.lastObservation).toHaveLength(22);
+    expect(engine.controls).toEqual([0.1, 1]);
     engine.pause();
     await engine.tick([1, 1]);
     expect(engine.ai.ticks).toBe(5);

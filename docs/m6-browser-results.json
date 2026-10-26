@@ -1,0 +1,131 @@
+{
+  "milestone": "M6",
+  "base_commit": "fabadec",
+  "versions": {
+    "physics": "physics.v1",
+    "obs": "obs.v1",
+    "track": "track.v1",
+    "replay": "replay.v1",
+    "heatmap": "heatmap.v1"
+  },
+  "asset_manifest_sha256": "dc3bee77129a15fb795ce65f71be03788a48fc548c0d910a742374f8164e6c5a",
+  "checkpoint_sha256": "5f247575bc0003fc4abf0a6c41704562ba818e1f8b31f83ddc92ff53011426f3",
+  "environment": {
+    "cpu": "Intel Core i5-11400F",
+    "os": "Linux",
+    "browser": "Chromium 156.0.8078.4",
+    "webgl": "ANGLE Vulkan SwiftShader Device (Subzero)",
+    "onnx_runtime_web": "1.30.0",
+    "wasm_threads": 1,
+    "viewport": [
+      1440,
+      1050
+    ],
+    "device_scale_factor": 1,
+    "multisample_antialiasing": false
+  },
+  "requirements": {
+    "lap_time_relative_error_max": 0.02,
+    "render_fps_min": 57,
+    "render_p95_ms_max": 22
+  },
+  "render_conditions": {
+    "visitation_layer": true,
+    "crash_layer": true,
+    "ai_vision": true,
+    "heatmap_snapshot": "0",
+    "live_inference": true
+  },
+  "checks": {
+    "make_test": {
+      "pytest_passed": 86,
+      "vitest_passed": 30,
+      "typecheck": true,
+      "ruff": true
+    },
+    "web_build": true,
+    "playwright_development_passed": 9,
+    "playwright_static_passed": 1,
+    "production_subpath": {
+      "path": "/racing-rl/",
+      "viewport": [
+        1366,
+        900
+      ],
+      "live_policy_ready": true,
+      "keyboard_driving": true,
+      "synchronized_ghosts": 6,
+      "heatmap_stage_selection": true,
+      "page_errors": [],
+      "failed_responses": [],
+      "external_http_requests": [],
+      "all_manifest_models_replays_heatmaps_present": true,
+      "nojekyll_present": true,
+      "development_harness_absent": true,
+      "missing_route_status": 404
+    },
+    "responsive_viewport": [
+      390,
+      844
+    ]
+  },
+  "bundle": {
+    "dist_files": 70,
+    "dist_bytes": 20982347,
+    "export_files": 47,
+    "export_bytes": 5903181
+  },
+  "measurements": [
+    {
+      "track": "sweep",
+      "snapshot": "final",
+      "browserLapTime": 24.22508223553428,
+      "pythonLapTime": 24.246155309819926,
+      "relativeError": 0.0008691305494158381,
+      "ticks": 1454,
+      "inferences": 727,
+      "crashes": 0,
+      "maxPositionError": 0.8623302473224526,
+      "inferenceAndSimulationMs": 113.30000001192093
+    },
+    {
+      "track": "ribbon",
+      "snapshot": "final",
+      "browserLapTime": 24.65233828394176,
+      "pythonLapTime": 24.591261626278996,
+      "relativeError": 0.002483673208433309,
+      "ticks": 1480,
+      "inferences": 740,
+      "crashes": 0,
+      "maxPositionError": 2.6032076126256127,
+      "inferenceAndSimulationMs": 124.40000000596046
+    },
+    {
+      "track": "technical",
+      "snapshot": "final",
+      "browserLapTime": 19.621722979668267,
+      "pythonLapTime": 19.81237641958874,
+      "relativeError": 0.00962294658060166,
+      "ticks": 1178,
+      "inferences": 589,
+      "crashes": 0,
+      "maxPositionError": 7.207760296622774,
+      "inferenceAndSimulationMs": 94.19999998807907
+    },
+    {
+      "render": {
+        "fps": 59.60463258771754,
+        "p95": 16.700000000000728,
+        "frames": 597,
+        "duration": 10016.000000023841,
+        "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.8078.4 Safari/537.36"
+      }
+    }
+  ],
+  "open_checks": [
+    "Physical gamepad",
+    "Subjective keyboard feel",
+    "Performance on an actual mid-range laptop",
+    "Real GIF recordings in the documented slots"
+  ]
+}

@@ -1,6 +1,6 @@
 # Reinforced Racing v2: Stadium look, intro page, progressive learning, track editor
 
-Date: 2026-10-26. Status: reviewed; awaiting owner approval.
+Date: 2026-10-26. Status: approved by owner.
 
 ## Intent
 

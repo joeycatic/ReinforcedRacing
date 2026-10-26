@@ -160,8 +160,26 @@ def test_complete_export_integrity_and_cache_repair(
     assert (root / "manifest.json").read_bytes() == before
 
 
+def assert_fixture_close(stored: object, fresh: object, path: str = "") -> None:
+    # Floats may differ in the last bits across CPUs/NumPy builds; everything else is exact.
+    if isinstance(stored, dict) and isinstance(fresh, dict):
+        assert stored.keys() == fresh.keys(), path
+        for key in stored:
+            assert_fixture_close(stored[key], fresh[key], f"{path}.{key}")
+    elif isinstance(stored, list) and isinstance(fresh, list):
+        assert len(stored) == len(fresh), path
+        for i, (a, b) in enumerate(zip(stored, fresh, strict=True)):
+            assert_fixture_close(a, b, f"{path}[{i}]")
+    elif isinstance(stored, float) or isinstance(fresh, float):
+        assert fresh == pytest.approx(stored, rel=1e-9, abs=1e-12), path
+    else:
+        assert stored == fresh, path
+
+
 def test_generated_fixtures_are_current() -> None:
     for name, fixture in fixtures().items():
-        assert json.loads((ROOT / "tests/fixtures/parity" / name).read_text()) == json.loads(
-            json.dumps(fixture)
+        assert_fixture_close(
+            json.loads((ROOT / "tests/fixtures/parity" / name).read_text()),
+            json.loads(json.dumps(fixture)),
+            name,
         )

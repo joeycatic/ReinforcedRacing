@@ -121,3 +121,9 @@
 - Use actual checkpoint `global_step` for training steps (for example the nominal `50000` snapshot is 50048 actual steps), retaining snapshot filenames in `source`; final is 6012928. This keeps captions consistent with replay metadata. `SPEC.md` is absent; the tracked `spec.md` supplies the milestone requirements.
 - Chosen steps: Sweep (10): 0, 327680, 491520, 983040, 1146880, 1310720, 1474560, 3112960, 3604480, 6012928. Ribbon (7): 0, 163840, 1146880, 1310720, 1474560, 4259840, 6012928. Technical (9): 0, 163840, 655360, 819200, 983040, 1638400, 3768320, 4587520, 6012928. All counts are within the expected 7–12 range; do not pad Ribbon with imperceptible or regressing policies.
 - Decoded and inspected every selected path over its track (26 SVGs and three contact sheets in the ignored M8 scratch directory). Retain the three data-derived milestone headlines and add only unmistakable path descriptions: Sweep 1146880 “Almost a lap”, Ribbon 1146880 “Around the hairpin”, Technical 983040 “Past the chicane”. Other intermediate headlines stay null. Re-running `make attempts` regenerates the default headlines; curated headlines require repeating visual inspection/editing.
+
+### M8 Task 2: atomic manifest version transition
+
+The exporter and browser version gate move to manifest.v3 together so committed assets
+remain loadable and `make test` remains green. The coordinator authorized this minimal
+Task 3 overlap; attempt type validation and replay access remain Task 3 work.

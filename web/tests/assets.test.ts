@@ -19,7 +19,7 @@ const asset: Asset = {
   sha256: "a".repeat(64),
 };
 const manifest = (): Manifest => ({
-  version: "manifest.v2",
+  version: "manifest.v3",
   site: asset,
   parity_demo: asset,
   medals: [
@@ -66,6 +66,9 @@ const replay = (): Replay => ({
 });
 afterEach(() => vi.unstubAllGlobals());
 describe("versioned assets", () => {
+  it("rejects manifest v2", () => {
+    expect(() => validateManifest({ ...manifest(), version: "manifest.v2" })).toThrow();
+  });
   for (const name of Object.keys(VERSIONS))
     it(`rejects an incompatible ${name} before fetching assets`, async () => {
       const data = manifest();

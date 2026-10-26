@@ -16,6 +16,7 @@ from eval.artifacts import (
     snapshot_paths,
     write_json,
 )
+from eval.attempts import load_attempts
 from eval.config import ExportConfig
 from eval.formats import HEATMAP_VERSION, REPLAY_VERSION
 from eval.medals import load_medals
@@ -44,6 +45,92 @@ def descriptor(root: Path, path: Path) -> dict:
     }
 
 
+def export_attempts(stage: Path, manifest: dict, config: ExportConfig) -> dict:
+    evidence = json.loads((ROOT / "experiments/attempt-selection.json").read_text())
+    candidates = {
+        (track, run["step"], run["source"]): candidate["checkpoint_sha256"]
+        for candidate in evidence["candidates"]
+        for track, run in candidate["runs"].items()
+    }
+    snapshots = {snapshot["id"]: snapshot for snapshot in manifest["snapshots"]}
+    showcase = make_track_pool("showcase")
+    result = {}
+    for track_id, choices in load_attempts().items():
+        result[track_id] = []
+        for choice in choices:
+            expected_hash = candidates[track_id, choice.step, choice.source]
+            if choice.source != "checkpoint":
+                snapshot = snapshots[choice.source]
+                if (
+                    snapshot["checkpoint_sha256"] != expected_hash
+                    or snapshot["step"] != choice.step
+                ):
+                    raise ValueError("Attempt snapshot changed since selection")
+                asset = snapshot["replays"][track_id]
+            else:
+                path = ROOT / config.run_dir / "checkpoints" / f"{choice.step}.pt"
+                checkpoint = load_checkpoint(path)
+                if checkpoint["source_sha256"] != expected_hash:
+                    raise ValueError(f"Attempt checkpoint changed since selection: {path}")
+                checkpoint["requested_step"] = f"attempt-{choice.step}"
+                signature = fingerprint(checkpoint, config, [showcase])
+                directory = ROOT / config.evaluation_dir / "attempts" / str(choice.step)
+                cache = directory / "summary.json"
+                cached = json.loads(cache.read_text()) if cache.exists() else {}
+                names = {f"{track.id}.replay.v1.json" for track in showcase.tracks}
+                if (
+                    cached.get("fingerprint") != signature
+                    or set(cached.get("files", {})) != names
+                    or not all(
+                        (directory / name).is_file() and sha256(directory / name) == digest
+                        for name, digest in cached.get("files", {}).items()
+                    )
+                ):
+                    summary, replays, _ = record_runs(
+                        checkpoint, showcase, config, deterministic=True
+                    )
+                    files = {}
+                    for track, replay in zip(showcase.tracks, replays, strict=True):
+                        name = f"{track.id}.replay.v1.json"
+                        write_json(directory / name, replay)
+                        files[name] = sha256(directory / name)
+                    cached = {"fingerprint": signature, "files": files, "summary": summary}
+                    write_json(cache, cached)
+                name = f"{track_id}.replay.v1.json"
+                source = directory / name
+                if sha256(source) != cached["files"][name]:
+                    raise ValueError("Attempt replay changed during export")
+                destination = stage / "replays" / f"attempt-{choice.step}" / name
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(source, destination)
+                asset = descriptor(stage, destination)
+            metadata = json.loads((stage / asset["path"]).read_text())["metadata"]
+            if (
+                metadata["checkpoint_sha256"] != expected_hash
+                or metadata["snapshot_step"] != choice.step
+            ):
+                raise ValueError("Attempt replay does not match selection")
+            outcome = (
+                "finished"
+                if metadata["finished"]
+                else "crashed"
+                if metadata["crashed"]
+                else "stalled"
+            )
+            result[track_id].append(
+                {
+                    "step": choice.step,
+                    "source": choice.source,
+                    "headline": choice.headline,
+                    "outcome": outcome,
+                    "progress": metadata["progress"],
+                    "lap_time": metadata["lap_time"],
+                    "replay": asset,
+                }
+            )
+    return result
+
+
 def build_assets(config: ExportConfig) -> dict:
     reports = run_evaluation(config)
     target = ROOT / config.assets_dir
@@ -54,7 +141,7 @@ def build_assets(config: ExportConfig) -> dict:
         config_path = stage / "simulation.json"
         write_json(config_path, {"versions": VERSIONS, **simulation_config()})
         manifest = {
-            "version": "manifest.v2",
+            "version": "manifest.v3",
             "versions": VERSIONS,
             "simulation": descriptor(stage, config_path),
             "tracks": [],
@@ -154,6 +241,7 @@ def build_assets(config: ExportConfig) -> dict:
                 shutil.copyfile(source, destination)
                 medal["replays"][track.id] = descriptor(stage, destination)
             manifest["medals"].append(medal)
+        manifest["attempts"] = export_attempts(stage, manifest, config)
         final = manifest["snapshots"][-1]
         author_laps = {
             t["id"]: reports[-1]["deterministic"]["tracks"][t["id"]]["mean_lap_time"]

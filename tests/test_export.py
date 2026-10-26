@@ -126,6 +126,7 @@ def test_complete_export_integrity_and_cache_repair(
     monkeypatch.setattr(recording, "load_env", lambda: EnvConfig(1, 3))
     monkeypatch.setattr(evaluate, "load_env", lambda: EnvConfig(1, 3))
     monkeypatch.setattr(assets, "load_medals", lambda: [])
+    monkeypatch.setattr(assets, "load_attempts", lambda: {})
     monkeypatch.setattr(
         assets,
         "build_site_data",
@@ -133,7 +134,7 @@ def test_complete_export_integrity_and_cache_repair(
     )
     manifest = assets.build_assets(config)
     root = Path(config.assets_dir)
-    assert manifest["version"] == "manifest.v2"
+    assert manifest["version"] == "manifest.v3"
     assert manifest["medals"][-1]["medal"] == "author"
     assert manifest["versions"] == assets.VERSIONS
     assert len(manifest["snapshots"]) == 2
@@ -220,7 +221,7 @@ def test_parity_demo_round_trips_fixture() -> None:
 def test_committed_medal_bundle_integrity() -> None:
     root = ROOT / "web/public/assets"
     manifest = json.loads((root / "manifest.json").read_text())
-    assert manifest["version"] == "manifest.v2"
+    assert manifest["version"] == "manifest.v3"
     medals = manifest["medals"]
     assert medals[-1]["medal"] == "author"
     for medal in medals:
@@ -235,3 +236,132 @@ def test_committed_medal_bundle_integrity() -> None:
                 assert a >= b * 1.03
     for key in ("site", "parity_demo"):
         assert artifacts.sha256(root / manifest[key]["path"]) == manifest[key]["sha256"]
+
+
+def test_committed_attempt_bundle_integrity() -> None:
+    root = ROOT / "web/public/assets"
+    manifest = json.loads((root / "manifest.json").read_text())
+    assert manifest["version"] == "manifest.v3"
+    snapshots = {s["id"]: s for s in manifest["snapshots"]}
+    assert set(manifest["attempts"]) == {t["id"] for t in manifest["tracks"]}
+    for track, attempts in manifest["attempts"].items():
+        assert 7 <= len(attempts) <= 12
+        assert attempts[0]["step"] == 0
+        assert attempts[-1]["source"] == "final"
+        assert [a["step"] for a in attempts] == sorted(a["step"] for a in attempts)
+        for attempt in attempts:
+            asset = attempt["replay"]
+            path = root / asset["path"]
+            assert artifacts.sha256(path) == asset["sha256"]
+            assert path.stat().st_size == asset["bytes"]
+            meta = json.loads(path.read_text())["metadata"]
+            outcome = (
+                "finished" if meta["finished"] else "crashed" if meta["crashed"] else "stalled"
+            )
+            assert meta["finished"] or meta["crashed"] or meta["truncated"]
+            assert attempt["outcome"] == outcome
+            assert attempt["progress"] == meta["progress"]
+            assert attempt["lap_time"] == meta["lap_time"]
+            assert attempt["step"] == meta["snapshot_step"]
+            if attempt["source"] != "checkpoint":
+                assert asset == snapshots[attempt["source"]]["replays"][track]
+            else:
+                assert meta["snapshot_id"] == f"attempt-{attempt['step']}"
+
+
+def test_attempt_checkpoint_sha_matches_selection() -> None:
+    root = ROOT / "web/public/assets"
+    manifest = json.loads((root / "manifest.json").read_text())
+    evidence = json.loads((ROOT / "experiments/attempt-selection.json").read_text())
+    hashes = {
+        (track, run["step"], run["source"]): candidate["checkpoint_sha256"]
+        for candidate in evidence["candidates"]
+        for track, run in candidate["runs"].items()
+    }
+    for track, attempts in manifest["attempts"].items():
+        for attempt in attempts:
+            meta = json.loads((root / attempt["replay"]["path"]).read_text())["metadata"]
+            assert meta["checkpoint_sha256"] == hashes[track, attempt["step"], attempt["source"]]
+
+
+def test_attempt_cache_repair_and_selection_hash_guard(
+    tmp_path: Path, pool: TrackPool, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from eval.attempts import AttemptChoice
+
+    config = replace(
+        load_export(), run_dir=str(tmp_path / "run"), evaluation_dir=str(tmp_path / "eval")
+    )
+    checkpoint = policy()
+    checkpoint["global_step"] = 123
+    evidence = tmp_path / "experiments/attempt-selection.json"
+    evidence.parent.mkdir()
+    evidence.write_text(
+        json.dumps(
+            {
+                "candidates": [
+                    {
+                        "checkpoint_sha256": "a" * 64,
+                        "runs": {"custom": {"step": 123, "source": "checkpoint"}},
+                    }
+                ]
+            }
+        )
+    )
+    monkeypatch.setattr(assets, "ROOT", tmp_path)
+    monkeypatch.setattr(assets, "load_checkpoint", lambda path: checkpoint.copy())
+    monkeypatch.setattr(assets, "make_track_pool", lambda split: pool)
+    monkeypatch.setattr(
+        assets, "load_attempts", lambda: {"custom": [AttemptChoice(123, "checkpoint", None)]}
+    )
+    monkeypatch.setattr(recording, "load_env", lambda: EnvConfig(1, 3))
+    stage = tmp_path / "assets"
+    first = assets.export_attempts(stage, {"snapshots": []}, config)
+    source = Path(config.evaluation_dir) / "attempts/123/custom.replay.v1.json"
+    source.write_text("corrupted")
+    assert assets.export_attempts(stage, {"snapshots": []}, config) == first
+    summary = source.with_name("summary.json")
+    cached = json.loads(summary.read_text())
+    cached["files"] = {}
+    summary.write_text(json.dumps(cached))
+    assert assets.export_attempts(stage, {"snapshots": []}, config) == first
+    assert json.loads(summary.read_text())["files"]
+
+    def unexpected_record(*args: object, **kwargs: object) -> None:
+        pytest.fail("Valid caches should not record again")
+
+    monkeypatch.setattr(assets, "record_runs", unexpected_record)
+    assert assets.export_attempts(stage, {"snapshots": []}, config) == first
+    checkpoint["source_sha256"] = "b" * 64
+    with pytest.raises(ValueError, match="changed since selection"):
+        assets.export_attempts(stage, {"snapshots": []}, config)
+
+
+@pytest.mark.parametrize("field,value", [("checkpoint_sha256", "b" * 64), ("step", 124)])
+def test_attempt_snapshot_selection_guard(
+    tmp_path: Path, pool: TrackPool, monkeypatch: pytest.MonkeyPatch, field: str, value: object
+) -> None:
+    from eval.attempts import AttemptChoice
+
+    evidence = tmp_path / "experiments/attempt-selection.json"
+    evidence.parent.mkdir()
+    evidence.write_text(
+        json.dumps(
+            {
+                "candidates": [
+                    {
+                        "checkpoint_sha256": "a" * 64,
+                        "runs": {"custom": {"step": 123, "source": "final"}},
+                    }
+                ]
+            }
+        )
+    )
+    monkeypatch.setattr(assets, "ROOT", tmp_path)
+    monkeypatch.setattr(assets, "make_track_pool", lambda split: pool)
+    monkeypatch.setattr(
+        assets, "load_attempts", lambda: {"custom": [AttemptChoice(123, "final", None)]}
+    )
+    snapshot = {"id": "final", "checkpoint_sha256": "a" * 64, "step": 123, field: value}
+    with pytest.raises(ValueError, match="snapshot changed since selection"):
+        assets.export_attempts(tmp_path / "assets", {"snapshots": [snapshot]}, load_export())

@@ -121,7 +121,7 @@ function validateAsset(asset: Asset): void {
     throw new Error("Invalid asset integrity descriptor");
 }
 export function validateManifest(data: Manifest): Manifest {
-  if (data.version !== "manifest.v2")
+  if (data.version !== "manifest.v3")
     throw new Error("Unsupported manifest version");
   requireVersions(data.versions);
   validateAsset(data.simulation);

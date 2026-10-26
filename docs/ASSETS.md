@@ -23,7 +23,7 @@ with `make eval ARGS="--checkpoint path/to/latest.pt --runs 5"`.
 
 ## Manifest
 
-`manifest.json` declares `manifest.v2`, plus physics/obs/track/replay/heatmap versions.
+`manifest.json` declares `manifest.v3`, plus physics/obs/track/replay/heatmap versions.
 It lists the simulation configuration, three tracks, and all scheduled snapshots.
 Each snapshot names its actual step count, source checkpoint SHA-256, ONNX model,
 per-track replay and heatmap descriptors, and numeric ONNX validation results.
@@ -138,3 +138,16 @@ M6's `web/src/viewer/` samples the decoded replays on one shared seconds clock a
 rasterizes sparse heatmap counts without changing their grid. It uses a fixed
 per-track scale across snapshots and checks response identity before applying a
 layer. See [M6 validation](M6_RESULTS.md) and the [main README](../README.md).
+
+## Learning attempts (M8)
+
+`attempts` maps each showcase track id to 7–12 selected runs in actual training-step
+order. Entries contain `step`, snapshot `source` (or `checkpoint`), optional `headline`,
+`outcome` (`finished`, `crashed`, or `stalled` for timeout), `progress`, `lap_time`, and
+a hashed `replay` descriptor. Numbers and outcomes come directly from replay metadata.
+Snapshot attempts reuse their existing replay descriptors. Checkpoint attempts use
+`replays/attempt-<step>/<track>.replay.v1.json` and that same `attempt-<step>` identity
+in metadata. They add no ONNX models. Export verifies checkpoint SHA-256 values against
+`experiments/attempt-selection.json`; deterministic caches under
+`<evaluation_dir>/attempts/<step>/` verify fingerprints and every replay hash.
+Run `make attempts` to select runs, then `make export` to regenerate the bundle.

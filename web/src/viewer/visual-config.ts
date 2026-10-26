@@ -1,5 +1,24 @@
 /** Presentation-only limits; none of these values enter physics or inference. */
 export const visualConfig = {
+  stadium: {
+    grass: [0x68a842, 0x5f9e3a],
+    grassBand: 10,
+    tarmac: 0x5d6470,
+    kerb: [0xd6312c, 0xe9e4d6],
+    kerbWidth: 1.2,
+    kerbStripe: 3,
+    gate: 0x2f7cf6,
+    gateEvery: 4,
+    zoom: { rest: 12, minimum: 6, speedScale: 60 },
+  },
+  rendering: {
+    targetFps: 55,
+    slowFrames: 10,
+    minimumResolution: 0.4,
+    resolutionScale: 0.8,
+    averageWeight: 0.1,
+    terrainResolution: 3,
+  },
   drift: {
     slipThreshold: 3,
     maxMarkPairs: 1200,

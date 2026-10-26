@@ -1,25 +1,27 @@
-import "./style.css";
-import { visualConfig } from "./viewer/visual-config";
-import { ViewerController } from "./viewer/controller";
+import "../style.css";
+import { visualConfig } from "../viewer/visual-config";
+import { ViewerController } from "../viewer/controller";
 import {
   AssetLoader,
-  type Snapshot,
+  type MedalName,
   type SimulationConfig,
-} from "./assets/load";
-import { Track } from "./sim/track";
-import { speed } from "./sim/physics";
-import { RaceEngine, FixedClock } from "./race/engine";
-import { DriverInput } from "./race/input";
-import { OnnxPolicy } from "./race/policy";
-import { RaceScene, minimapPath } from "./race/scene";
+} from "../assets/load";
+import { medalsForTrack, MEDAL_COLORS, earnedMedal } from "./medals";
+import { Track } from "../sim/track";
+import { speed } from "../sim/physics";
+import { RaceEngine, FixedClock } from "./engine";
+import { DriverInput } from "./input";
+import { OnnxPolicy } from "./policy";
+import { RaceScene, minimapPath } from "./scene";
 
 function element<T extends HTMLElement = HTMLElement>(id: string): T {
   const found = document.getElementById(id);
   if (!found) throw new Error(`Missing interface element ${id}`);
   return found as T;
 }
-const trackSelect = element<HTMLSelectElement>("track-select"),
-  snapshotSelect = element<HTMLSelectElement>("snapshot-select");
+let selectedTrack = "",
+  selectedMedal: MedalName = "gold";
+const prerace = element("prerace");
 const start = element<HTMLButtonElement>("start-button"),
   pause = element<HTMLButtonElement>("pause-button");
 const stage = element("circuit"),
@@ -58,10 +60,6 @@ const time = (seconds: number | null): string => {
   const milliseconds = Math.round(seconds * 1000);
   return `${String(Math.floor(milliseconds / 60000)).padStart(2, "0")}:${String(Math.floor(milliseconds / 1000) % 60).padStart(2, "0")}.${String(milliseconds % 1000).padStart(3, "0")}`;
 };
-const steps = (snapshot: Snapshot): string =>
-  snapshot.id === "final"
-    ? `FINAL / ${(snapshot.step / 1e6).toFixed(1).replace(/\.0$/, "")}M STEPS`
-    : `${Number(snapshot.id).toLocaleString("en-US")} STEPS`;
 let loader: AssetLoader, config: SimulationConfig;
 let viewer: ViewerController | undefined;
 const tracks = new Map<string, Track>();
@@ -117,6 +115,7 @@ function begin(): void {
   input.clear();
   clock.clear();
   scene.clearMarks();
+  prerace.hidden = true;
   engine.start();
   lastPhase = "";
   lastCrashCount = 0;
@@ -168,22 +167,21 @@ async function selectRace(preserveRace = false): Promise<void> {
   result.hidden = true;
   start.disabled = true;
   pause.disabled = true;
-  trackSelect.disabled = true;
-  snapshotSelect.disabled = true;
+
   labels["system-status"].textContent =
     viewer?.mode === "ghosts" ? "LOADING GHOSTS" : "LOADING POLICY";
   labels["race-state"].textContent = "LOADING";
   message("SETTING THE GRID", "Preparing your live opponent.", "NEXT RACE");
   try {
     if (stepping) await stepping;
-    const snapshot = loader.manifest.snapshots.find(
-      (s) => s.id === snapshotSelect.value,
+    const snapshot = loader.manifest.medals.find(
+      (m) => m.medal === selectedMedal,
     )!;
-    const track = tracks.get(trackSelect.value)!;
+    const track = tracks.get(selectedTrack)!;
     if (viewer?.mode !== "ghosts") {
-      const replay = await loader.replay(snapshot, track.data.id);
+      const replay = await loader.medalReplay(snapshot, track.data.id);
       if (serial !== loadSerial) return;
-      if (policyId !== snapshot.id) {
+      if (policyId !== snapshot.medal) {
         const next = await OnnxPolicy.create(
           await loader.bytes(snapshot.model),
         );
@@ -193,9 +191,10 @@ async function selectRace(preserveRace = false): Promise<void> {
         }
         const previous = policy;
         policy = next;
-        policyId = snapshot.id;
+        policyId = snapshot.medal;
         await previous?.release();
       }
+      if (serial !== loadSerial) return;
       if (
         !preserveRace ||
         !engine ||
@@ -234,19 +233,14 @@ async function selectRace(preserveRace = false): Promise<void> {
       track.length,
     ).toLocaleString("en-US");
     labels["circuit-name"].textContent = track.data.name.toUpperCase();
-    labels["ai-label"].textContent =
-      snapshot.id === "final" ? "FINAL POLICY" : `${snapshot.id} STEPS`;
+    labels["ai-label"].textContent = snapshot.medal.toUpperCase() + " MEDAL";
     labels["snapshot-note"].textContent =
-      snapshot.id === "0"
-        ? "No training. An AI at its very first start line."
-        : snapshot.id === "final"
-          ? `${snapshot.step.toLocaleString("en-US")} steps of practice. One lap to beat it.`
-          : "An earlier policy. Experience makes the difference.";
+      snapshot.step.toLocaleString("en-US") +
+      " steps of practice. A live policy to beat.";
     lastPhase = "";
     lastCrashCount = 0;
     loading = false;
-    trackSelect.disabled = false;
-    snapshotSelect.disabled = false;
+
     start.disabled = false;
     labels["system-status"].textContent =
       viewer?.mode === "ghosts" ? "GHOSTS READY" : "LIVE POLICY READY";
@@ -318,11 +312,26 @@ function updateHud(): void {
       : phase === "ready"
         ? "READY"
         : time(engine.ai.time);
-  const checkpoint = engine.player.progress.checkpoint_index;
-  labels["checkpoint-label"].textContent = checkpoint
-    ? `CHECKPOINT ${String(checkpoint).padStart(2, "0")}`
+  const ordinal = Math.max(
+    0,
+    ...[...engine.playerSplits.keys()].filter(
+      (i) =>
+        i % visualConfig.stadium.gateEvery === 0 && engine!.aiSplits.has(i),
+    ),
+  );
+  labels["checkpoint-label"].textContent = ordinal
+    ? `CHECKPOINT ${String(ordinal).padStart(2, "0")}`
     : "START LINE";
-  const split = engine.split;
+  const split = ordinal
+    ? {
+        ordinal,
+        delta:
+          engine.playerSplits.get(ordinal)! - engine.aiSplits.get(ordinal)!,
+      }
+    : null;
+  element("split-time").textContent = split
+    ? time(engine.playerSplits.get(ordinal)!)
+    : "—";
   labels["split-delta"].textContent = split
     ? `${split.delta <= 0 ? "−" : "+"}${Math.abs(split.delta).toFixed(3)}`
     : "—";
@@ -363,16 +372,24 @@ function updateHud(): void {
       result.hidden = false;
       const win =
         engine.aiLapTime === null || engine.playerLapTime! <= engine.aiLapTime;
-      labels["result-title"].textContent = win
-        ? "YOU TOOK THE LAP"
-        : "THE MACHINE TAKES IT";
+      const medal = earnedMedal(
+        engine.playerLapTime!,
+        loader.manifest.medals,
+        selectedTrack,
+      );
+      labels["result-title"].textContent = medal
+        ? medal.toUpperCase() + " MEDAL"
+        : "NO MEDAL";
       labels["result-description"].textContent =
         engine.aiLapTime === null
           ? "Across the line ahead of the AI."
           : `${Math.abs(engine.playerLapTime! - engine.aiLapTime).toFixed(3)} seconds ${win ? "ahead. That’s your racing line." : "back. There’s time to find on the next lap."}`;
       labels["result-player"].textContent = time(engine.playerLapTime);
-      labels["result-ai"].textContent =
-        engine.aiLapTime === null ? "NOT FINISHED" : time(engine.aiLapTime);
+      labels["result-ai"].textContent = time(
+        engine.aiLapTime ??
+          loader.manifest.medals.find((m) => m.medal === selectedMedal)!
+            .lap_times[selectedTrack],
+      );
       announce(
         win
           ? "Lap complete. You beat the live AI."
@@ -464,8 +481,16 @@ async function frame(now: number): Promise<void> {
 start.addEventListener("click", begin);
 element("race-again").addEventListener("click", begin);
 pause.addEventListener("click", togglePause);
-trackSelect.addEventListener("change", () => void selectRace());
-snapshotSelect.addEventListener("change", () => void selectRace());
+for (const button of document.querySelectorAll(".change-race"))
+  button.addEventListener("click", () => {
+    engine?.pause();
+    input.clear();
+    clock?.clear();
+    lastPhase = "";
+    prerace.hidden = false;
+    result.hidden = true;
+  });
+
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) {
     engine?.pause();
@@ -483,6 +508,7 @@ async function changeMode(mode: "race" | "ghosts"): Promise<void> {
   clock?.clear();
   viewer.mode = mode;
   document.body.dataset.mode = mode;
+  prerace.hidden = mode === "race" && engine?.phase === "paused";
   element("ai-inspector").hidden = true;
   document.querySelector(".intro-note")!.innerHTML =
     mode === "ghosts"
@@ -492,9 +518,6 @@ async function changeMode(mode: "race" | "ghosts"): Promise<void> {
     mode === "ghosts"
       ? "FROM THE FIRST ATTEMPT TO THE FINAL POLICY."
       : "BUILT TO LEARN. READY TO RACE.";
-  document.querySelector(
-    ".setup>.section-label span:first-child",
-  )!.textContent = mode === "ghosts" ? "REPLAY SETUP" : "RACE SETUP";
   for (const item of document.querySelectorAll<HTMLElement>("[data-race-only]"))
     item.hidden = mode === "ghosts";
   element("ghost-sidebar").hidden = mode !== "ghosts";
@@ -520,6 +543,37 @@ element("mode-ghosts").addEventListener(
   "click",
   () => void changeMode("ghosts"),
 );
+function renderCards(): void {
+  for (const card of document.querySelectorAll<HTMLElement>(".track-card"))
+    card.setAttribute(
+      "aria-pressed",
+      String(card.dataset.track === selectedTrack),
+    );
+  const medals = medalsForTrack(loader.manifest.medals, selectedTrack);
+  if (!medals.some((m) => m.medal === selectedMedal))
+    selectedMedal = (medals.find((m) => m.medal === "gold") ?? medals.at(-1)!)
+      .medal;
+  element("medal-cards").replaceChildren();
+  for (const medal of medals) {
+    const card = document.createElement("button");
+    card.className = "medal-card";
+    card.dataset.medal = medal.medal;
+    card.style.setProperty("--medal", MEDAL_COLORS[medal.medal]);
+    card.setAttribute("aria-pressed", String(medal.medal === selectedMedal));
+    card.innerHTML =
+      '<span class="medal-disc" aria-hidden="true"></span><strong>' +
+      medal.medal.toUpperCase() +
+      "</strong><span>" +
+      time(medal.lap_times[selectedTrack]) +
+      "</span>";
+    card.addEventListener("click", () => {
+      selectedMedal = medal.medal;
+      renderCards();
+      void selectRace();
+    });
+    element("medal-cards").append(card);
+  }
+}
 async function boot(): Promise<void> {
   try {
     [loader] = await Promise.all([
@@ -536,19 +590,30 @@ async function boot(): Promise<void> {
     for (const descriptor of loader.manifest.tracks) {
       const track = await loader.track(descriptor.id);
       tracks.set(descriptor.id, track);
-      const option = new Option(track.data.name, track.data.id);
-      trackSelect.add(option);
+      const card = document.createElement("button");
+      card.className = "track-card";
+      card.dataset.track = track.data.id;
+      const map = minimapPath(track);
+      card.innerHTML =
+        '<svg viewBox="' +
+        map.viewBox +
+        '" aria-hidden="true"><path d="' +
+        map.path +
+        '"/></svg><strong></strong><span></span><p></p>';
+      card.querySelector("strong")!.textContent = track.data.name;
+      card.querySelector("span")!.textContent = Math.round(track.length) + " m";
+      card.querySelector("p")!.textContent = descriptions[track.data.id];
+      card.addEventListener("click", () => {
+        selectedTrack = track.data.id;
+        renderCards();
+        void selectRace();
+      });
+      element("track-cards").append(card);
     }
-    trackSelect.remove(0);
-    snapshotSelect.remove(0);
-    for (const snapshot of loader.manifest.snapshots)
-      snapshotSelect.add(new Option(steps(snapshot), snapshot.id));
-    snapshotSelect.value = loader.manifest.snapshots.some(
-      (s) => s.id === "final",
-    )
-      ? "final"
-      : loader.manifest.snapshots.at(-1)!.id;
+    selectedTrack = loader.manifest.tracks[0].id;
+    renderCards();
     await selectRace();
+    if (location.hash === "#watch") await changeMode("ghosts");
     requestAnimationFrame(frame);
   } catch (cause) {
     error(cause);

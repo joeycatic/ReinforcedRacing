@@ -150,3 +150,15 @@ describe("live race engine", () => {
     expect(midpoint.psi).toBeCloseTo(Math.PI, 12);
   });
 });
+
+it("launch skips countdown and advances the AI on the next tick", async () => {
+  const engine = create({
+    predict: async () => ({ action: [0, 1], value: 0 }),
+  });
+  engine.launch();
+  expect(engine.phase).toBe("racing");
+  expect(engine.countdownTicks).toBe(0);
+  await engine.tick([0, 0]);
+  expect(engine.ai.ticks).toBe(1);
+  expect(engine.ai.state.vx).toBeGreaterThan(0);
+});

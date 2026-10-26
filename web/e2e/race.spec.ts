@@ -32,10 +32,27 @@ test("race controls, countdown, pause, restart and responsive layout", async ({
 }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  await page.goto("/");
+  await page.goto("/race.html");
   await expect(page.locator("#start-button")).toBeEnabled({ timeout: 30000 });
-  await expect(page.locator("#track-select option")).toHaveCount(3);
-  await expect(page.locator("#snapshot-select option")).toHaveCount(6);
+  await expect(page.locator(".track-card")).toHaveCount(3);
+  await expect(page.locator("#track-select,#snapshot-select")).toHaveCount(0);
+  await expect(page.locator('[data-medal="gold"]')).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(page.locator('[data-medal="author"]')).toContainText("AUTHOR");
+  await page.locator('[data-track="technical"]').click();
+  await page.locator('[data-medal="author"]').click();
+  await page.locator('[data-medal="gold"]').click();
+  await page.locator('[data-medal="author"]').click();
+  await expect(page.locator("#ai-label")).toHaveText("AUTHOR MEDAL");
+  await expect(page.locator("#start-button")).toBeEnabled();
+  await page.locator('[data-track="sweep"]').click();
+  await expect(page.locator("#start-button")).toBeEnabled();
+  await page.screenshot({
+    path: "test-results/m7-prerace.png",
+    fullPage: true,
+  });
   await page.screenshot({ path: "test-results/m5-ready.png", fullPage: true });
   await page.locator("#start-button").click();
   await expect(page.locator("#center-message")).toContainText("3");
@@ -45,6 +62,7 @@ test("race controls, countdown, pause, restart and responsive layout", async ({
   await page.keyboard.down("ArrowUp");
   await page.waitForTimeout(1400);
   await page.keyboard.up("ArrowUp");
+  await page.screenshot({ path: "test-results/m7-race.png", fullPage: true });
   expect(Number(await page.locator("#speed").innerText())).toBeGreaterThan(0);
   await page.keyboard.press("Escape");
   await expect(page.locator("#race-state")).toHaveText("PAUSED");
@@ -57,23 +75,35 @@ test("race controls, countdown, pause, restart and responsive layout", async ({
   await expect(page.locator("#speed")).toHaveText("000");
   await page.keyboard.press("Enter");
   await expect(page.locator("#race-state")).toHaveText("START SEQUENCE");
-  await page.locator("#track-select").selectOption("technical");
+  await page.locator(".race-actions .change-race").click();
+  await page.locator('[data-track="technical"]').click();
   await expect(page.locator("#circuit-name")).toHaveText("TECHNICAL LOOP");
   await expect(page.locator("#race-state")).toHaveText("GRID READY");
-  await page.locator("#snapshot-select").selectOption("0");
+  await page.locator('[data-medal="gold"]').click();
   await expect(page.locator("#start-button")).toBeEnabled();
-  await expect(page.locator("#ai-label")).toHaveText("0 STEPS");
+  await expect(page.locator("#ai-label")).toHaveText("GOLD MEDAL");
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.screenshot({ path: "test-results/m5-mobile.png", fullPage: true });
+  await page.screenshot({
+    path: "test-results/m7-prerace-mobile.png",
+    fullPage: true,
+  });
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBe(true);
+  await page.locator("#start-button").click();
+  await expect(page.locator("#race-state")).toHaveText("RACE IN PROGRESS", {
+    timeout: 5000,
+  });
+  await page.screenshot({
+    path: "test-results/m7-race-mobile.png",
+    fullPage: true,
+  });
   expect(errors).toEqual([]);
 });
 test("render frame timing during live inference", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/race.html");
   await expect(page.locator("#start-button")).toBeEnabled({ timeout: 30000 });
   await page.locator("#visits-toggle").check();
   await page.locator("#crashes-toggle").check();
@@ -123,4 +153,77 @@ test("render frame timing during live inference", async ({ page }) => {
   measurements.push({ render: result });
   expect(result.fps).toBeGreaterThanOrEqual(57);
   expect(result.p95).toBeLessThanOrEqual(22);
+});
+
+for (const track of ["sweep", "ribbon", "technical"])
+  test(`Gold policy finishes with its exported lap on ${track}`, async ({
+    page,
+  }) => {
+    await page.goto("/e2e/runner.html");
+    await page.waitForFunction(
+      () => typeof window.validatePolicy === "function",
+    );
+    const result = await page.evaluate(
+      (track) => window.validatePolicy(track, "gold"),
+      track,
+    );
+    expect(result.crashes).toBe(0);
+    expect(result.relativeError).toBeLessThanOrEqual(0.02);
+    const author = await page.evaluate(
+      (track) => window.validatePolicy(track, "final"),
+      track,
+    );
+    expect(result.browserLapTime).toBeGreaterThan(author.browserLapTime);
+    measurements.push(result);
+  });
+
+test("gate split uses the blue ahead or red behind timing box", async ({
+  page,
+}) => {
+  await page.goto("/race.html");
+  await page.evaluate(async () => {
+    // A test-only driver supplies live policy controls to the real race tick.
+    // No production state, split times or rendering methods are replaced.
+    const modulePath = "/src/race/engine.ts";
+    const { RaceEngine } = (await import(
+      modulePath
+    )) as typeof import("../src/race/engine");
+    const tick = RaceEngine.prototype.tick;
+    const previous = new WeakMap<
+      InstanceType<typeof RaceEngine>,
+      import("../src/sim/types").Action
+    >();
+    RaceEngine.prototype.tick = async function (input) {
+      if (
+        this.phase === "racing" &&
+        this.raceTicks % this.config.physics.action_repeat === 0
+      ) {
+        const prediction = await this.policy.predict(
+          this.observations.build(
+            this.player.state,
+            this.player.progress.projection,
+            previous.get(this) ?? [0, 0],
+          ),
+        );
+        input = prediction.action;
+        previous.set(this, input);
+      }
+      await tick.call(this, input);
+    };
+  });
+  await expect(page.locator("#start-button")).toBeEnabled({ timeout: 30000 });
+  await page.locator("#start-button").click();
+  await expect(page.locator("#split-delta")).toHaveClass(/ahead|behind/, {
+    timeout: 20000,
+  });
+  await expect(page.locator("#checkpoint-label")).toHaveText(
+    /CHECKPOINT 0[48]/,
+  );
+  const ahead = await page
+    .locator("#split-delta")
+    .evaluate((el) => el.classList.contains("ahead"));
+  await expect(page.locator("#split-delta")).toHaveCSS(
+    "background-color",
+    ahead ? "rgb(47, 124, 246)" : "rgb(214, 49, 44)",
+  );
 });

@@ -4,7 +4,7 @@ test("synchronized ghosts, playback controls, heatmap stages and return to live 
 }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto("/");
+  await page.goto("/race.html");
   await expect(page.locator("#mode-ghosts")).toBeEnabled({ timeout: 30000 });
   await page.locator("#mode-ghosts").click();
   await expect(page.locator("#system-status")).toHaveText("GHOSTS READY");
@@ -64,7 +64,7 @@ test("synchronized ghosts, playback controls, heatmap stages and return to live 
     "50 runs · 0 crashes",
   );
   expect(modelRequests).toEqual([]);
-  await page.locator("#track-select").selectOption("technical");
+  await page.locator('[data-track="technical"]').click();
   await expect(page.locator("#circuit-name")).toHaveText("TECHNICAL LOOP");
   await expect(page.locator("#ghost-lineup>div")).toHaveCount(6);
   await expect(page.locator("#playback-time")).toHaveText("0.0 / 200.0 s");
@@ -92,10 +92,10 @@ test("discard stale heatmap responses after switching tracks", async ({
     await new Promise((resolve) => setTimeout(resolve, 250));
     await route.continue();
   });
-  await page.goto("/");
+  await page.goto("/race.html");
   await expect(page.locator("#start-button")).toBeEnabled({ timeout: 30000 });
   await page.locator("#visits-toggle").check();
-  await page.locator("#track-select").selectOption("ribbon");
+  await page.locator('[data-track="ribbon"]').click();
   await expect(page.locator("#circuit-name")).toHaveText("LONG RIBBON");
   await expect(page.locator("#heatmap-summary")).toContainText("50 runs ·");
   await page.locator("#visits-toggle").uncheck();
@@ -110,7 +110,7 @@ test("a failed heatmap stays unavailable while the live race still works", async
   await page.route("**/heatmaps/**", (route) =>
     route.fulfill({ status: 503, body: "unavailable" }),
   );
-  await page.goto("/");
+  await page.goto("/race.html");
   await expect(page.locator("#start-button")).toBeEnabled({ timeout: 30000 });
   await page.locator("#visits-toggle").check();
   await expect(page.locator("#heatmap-summary")).toHaveText(
@@ -125,7 +125,7 @@ test("a failed heatmap stays unavailable while the live race still works", async
 test("watching ghosts pauses and preserves a race on the same circuit", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/race.html");
   await expect(page.locator("#start-button")).toBeEnabled({ timeout: 30000 });
   await page.locator("#start-button").click();
   await expect(page.locator("#race-state")).toHaveText("RACE IN PROGRESS", {

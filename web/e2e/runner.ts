@@ -28,10 +28,17 @@ window.validatePolicy = async (trackId, snapshotId = "final") => {
   );
   const track = await loader.track(trackId),
     config = await loader.simulation();
-  const snapshot = loader.manifest.snapshots.find((s) => s.id === snapshotId)!;
+  const medal = loader.manifest.medals.find((m) => m.medal === snapshotId);
+  const snapshot =
+    medal ?? loader.manifest.snapshots.find((s) => s.id === snapshotId)!;
   const policy = await OnnxPolicy.create(await loader.bytes(snapshot.model));
   try {
-    const replay = await loader.replay(snapshot, trackId),
+    const replay = medal
+        ? await loader.medalReplay(medal, trackId)
+        : await loader.replay(
+            snapshot as import("../src/assets/load").Snapshot,
+            trackId,
+          ),
       engine = new RaceEngine(track, config, policy);
     engine.start();
     for (let i = 0; i < 180; i++) await engine.tick([0, 0]);

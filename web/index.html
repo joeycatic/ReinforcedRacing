@@ -2,319 +2,124 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#10191c" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#68a842" />
     <meta
       name="description"
-      content="Take the wheel against a racing AI trained from scratch. Three circuits, six stages of learning, one lap to beat it."
+      content="PPO from scratch. A car that learned to race, running live in your browser."
     />
-    <title>Reinforced Racing — Take the wheel</title>
+    <title>Reinforced Racing — A car that taught itself to drive</title>
   </head>
   <body>
-    <a class="skip-link" href="#circuit">Skip to circuit</a>
-    <div class="shell">
-      <header class="masthead">
-        <a class="brand" href="./" aria-label="Reinforced Racing home"
-          ><span class="brand-mark" aria-hidden="true">R<span>R</span></span
-          ><span>REINFORCED<br /><b>RACING</b></span></a
-        >
-        <nav class="view-tabs" aria-label="Experience">
-          <button id="mode-race" disabled aria-pressed="true">
-            <span>01</span> RACE THE AI
-          </button>
-          <button id="mode-ghosts" disabled aria-pressed="false">
-            <span>02</span> WATCH IT LEARN
-          </button>
-        </nav>
-        <div class="system-status">
-          <i></i><span id="system-status">CONNECTING</span>
+    <a class="skip-link" href="#ppo">Skip to the engineering</a>
+    <header>
+      <a class="wordmark" href="./">REINFORCED <b>RACING</b></a>
+      <nav aria-label="Main navigation">
+        <a href="#ppo">The engineering</a
+        ><a href="https://github.com/joeycatic/ReinforcedRacing">GitHub</a>
+      </nav>
+    </header>
+    <main>
+      <section id="hero">
+        <div id="hero-canvas" aria-label="Live AI race track">
+          <div class="static-track" aria-hidden="true"></div>
         </div>
-      </header>
-      <main>
-        <div class="intro">
-          <div>
-            <p class="eyebrow">BUILT TO LEARN. READY TO RACE.</p>
-            <h1>HUMAN <span>VS.</span> MACHINE</h1>
+        <div class="hero-copy">
+          <h1>
+            A CAR THAT TAUGHT ITSELF TO DRIVE<span aria-hidden="true">.</span>
+          </h1>
+          <p>
+            Reinforcement learning from scratch: a policy trained with my own
+            PPO on <span data-stat="training_tracks"></span> generated tracks,
+            now racing live in your browser.
+          </p>
+          <div class="hero-actions">
+            <a class="primary" href="./race.html">Race the AI</a
+            ><a class="secondary" href="./race.html#watch">Watch it learn</a
+            ><button disabled>Draw a track <small>Coming soon</small></button>
           </div>
-          <p class="intro-note">
-            It learned from zero.<br />Now it’s your turn to drive.
+        </div>
+        <span id="hero-status">FINAL POLICY · BROAD SWEEP</span>
+      </section>
+      <section id="stats" aria-label="Measured results"></section>
+      <section id="ppo" class="engineering">
+        <div class="section-heading">
+          <h2>PPO. FROM SCRATCH.</h2>
+          <p>
+            No reinforcement learning framework. The rollout buffer, advantage
+            estimates, clipped objective and running normalization are written
+            by hand.
           </p>
         </div>
-        <div class="race-layout">
-          <aside class="setup" aria-label="Race setup">
-            <div class="section-label">
-              <span>RACE SETUP</span><span>3 CIRCUITS</span>
-            </div>
-            <label for="track-select">CIRCUIT</label>
-            <select id="track-select" disabled>
-              <option>Loading circuits…</option>
-            </select>
-            <p id="track-description" class="field-note">
-              Finding the start line.
-            </p>
-            <div class="route-preview">
-              <svg
-                id="route-preview"
-                aria-label="Selected circuit layout"
-                role="img"
-              >
-                <path id="route-path" />
-              </svg>
-              <div>
-                <strong id="track-length">—</strong><span>METERS / 1 LAP</span>
-              </div>
-            </div>
-            <label for="snapshot-select" data-race-only
-              >AI TRAINING STAGE</label
-            >
-            <select id="snapshot-select" data-race-only disabled>
-              <option>Loading policies…</option>
-            </select>
-            <p class="field-note" id="snapshot-note" data-race-only>
-              A live opponent. Every corner is a decision.
-            </p>
-            <div class="lineup" data-race-only>
-              <div>
-                <span class="driver-color player"></span><span>YOU</span
-                ><small>KEYBOARD / GAMEPAD</small>
-              </div>
-              <div>
-                <span class="driver-color ai"></span><span>THE AI</span
-                ><small id="ai-label">FINAL POLICY</small>
-              </div>
-            </div>
-            <label class="ghost-control" data-race-only
-              ><input type="checkbox" id="ghost-toggle" /><span
-                >Reference ghost</span
-              ><span class="toggle-track" aria-hidden="true"></span
-            ></label>
-            <button
-              id="start-button"
-              class="primary-button"
-              data-race-only
-              disabled
-            >
-              <span>LOADING THE GRID</span><span aria-hidden="true">↗</span>
-            </button>
-            <button
-              id="pause-button"
-              class="quiet-button"
-              data-race-only
-              disabled
-            >
-              Pause race <kbd>ESC</kbd>
-            </button>
-            <section id="ghost-sidebar" hidden aria-label="Training stages">
-              <p class="section-label">ONE START. EVERY STAGE.</p>
-              <p class="field-note">
-                The same circuit, from the first attempt to the final policy.
-                All ghosts share one start time.
-              </p>
-              <div id="ghost-lineup" class="ghost-lineup"></div>
-              <p class="field-note">
-                Each ghost stops at its finish, crash, or time limit.
-              </p>
-            </section>
-            <details class="controls" data-race-only>
-              <summary class="section-label">
-                KEYBOARD CONTROLS <span>+</span>
-              </summary>
-              <div>
-                <span
-                  ><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> /
-                  ARROWS</span
-                ><span>DRIVE</span>
-              </div>
-              <div><kbd>SPACE</kbd><span>BRAKE / REVERSE</span></div>
-              <div><kbd>R</kbd><span>RESPAWN</span></div>
-              <div><kbd>ENTER</kbd><span>RESTART</span></div>
-              <p>
-                Cars pass through each other.<br />Race your line, not their
-                bumper.
-              </p>
-            </details>
-          </aside>
-          <section class="race-view" aria-label="Live race">
-            <div class="circuit-bar">
-              <div>
-                <span class="live-dot"></span
-                ><strong id="circuit-name">PREPARING CIRCUIT</strong
-                ><span class="divider">/</span><span>TIME ATTACK</span>
-              </div>
-              <span id="race-state">LOADING</span>
-            </div>
-            <div
-              id="circuit"
-              class="circuit"
-              tabindex="0"
-              aria-label="Race controls. WASD or arrows to drive, R to respawn, Enter to restart, Escape to pause."
-            >
-              <div id="canvas-host"></div>
-              <div class="hud" data-race-only>
-                <div class="timer-block">
-                  <span>LAP 01 / 01</span
-                  ><strong id="lap-timer">00:00.000</strong>
-                </div>
-                <div class="split-block">
-                  <span id="checkpoint-label">START LINE</span
-                  ><strong id="split-delta">—</strong>
-                </div>
-              </div>
-              <div id="center-message" class="center-message" role="status">
-                <span class="eyebrow">BRINGING THE CIRCUIT ONLINE</span
-                ><strong>GETTING READY</strong>
-                <p>Loading track and live policy.</p>
-              </div>
-              <div class="view-legend" data-race-only>
-                <span><i class="player"></i> YOU</span
-                ><span><i class="ai"></i> LIVE AI</span>
-              </div>
-              <div class="minimap" data-race-only>
-                <svg id="minimap" aria-label="Race minimap" role="img">
-                  <path id="minimap-path" />
-                  <circle id="minimap-ai" r="5" />
-                  <circle id="minimap-player" r="5" /></svg
-                ><span>CIRCUIT MAP</span>
-              </div>
-              <aside
-                id="ai-inspector"
-                class="ai-inspector"
-                hidden
-                aria-label="Latest AI observation and controls"
-              >
-                <strong>WHAT THE AI SEES</strong
-                ><label for="ai-steer"
-                  >STEER <output id="ai-steer-value">0.00</output></label
-                ><meter id="ai-steer" min="-1" max="1" value="0"></meter>
-                <label for="ai-throttle"
-                  >THROTTLE / BRAKE
-                  <output id="ai-throttle-value">0.00</output></label
-                ><meter id="ai-throttle" min="-1" max="1" value="0"></meter>
-                <p
-                  title="Critic estimate in training reward units, not seconds or a win probability."
-                >
-                  EXPECTED RETURN <output id="ai-value">0.00</output>
-                </p>
-                <meter
-                  id="ai-value-meter"
-                  min="-1"
-                  max="1"
-                  value="0"
-                  aria-label="Expected return, scaled for display"
-                  title="Bounded display of expected return; the number above is the raw critic output."
-                ></meter>
-              </aside>
-              <div id="result" class="result" hidden>
-                <p class="eyebrow">FINISH LINE / RACE COMPLETE</p>
-                <h2 id="result-title">LAP COMPLETE</h2>
-                <p id="result-description"></p>
-                <div class="result-times">
-                  <div>
-                    <span>YOUR LAP</span><strong id="result-player">—</strong>
-                  </div>
-                  <div>
-                    <span>AI LAP</span><strong id="result-ai">—</strong>
-                  </div>
-                </div>
-                <button id="race-again" class="primary-button">
-                  RACE AGAIN <span>↗</span>
-                </button>
-              </div>
-            </div>
-            <div
-              id="playback-controls"
-              class="playback-controls"
-              hidden
-              aria-label="Ghost playback"
-            >
-              <div class="playback-buttons">
-                <button id="playback-play" aria-pressed="false">Play</button
-                ><button id="playback-restart">Restart</button
-                ><label for="playback-speed">Speed</label
-                ><select id="playback-speed">
-                  <option value="0.5">0.5×</option>
-                  <option value="1" selected>1×</option>
-                  <option value="2">2×</option>
-                  <option value="4">4×</option></select
-                ><output id="playback-time" for="playback-seek"
-                  >0.0 / 0.0 s</output
-                >
-              </div>
-              <label class="sr-only" for="playback-seek"
-                >Replay position in seconds</label
-              ><input
-                id="playback-seek"
-                type="range"
-                min="0"
-                max="200"
-                value="0"
-                step="0.1"
-              />
-            </div>
-            <div class="telemetry" data-race-only>
-              <div class="speed-readout">
-                <strong id="speed">000</strong><span>KM/H</span>
-              </div>
-              <div class="race-progress">
-                <div>
-                  <span>YOUR PROGRESS</span
-                  ><span id="progress-percent">0%</span>
-                </div>
-                <div class="progress-track"><i id="progress-fill"></i></div>
-              </div>
-              <div class="ai-time">
-                <span>AI LAP</span><strong id="ai-time">READY</strong>
-              </div>
-            </div>
-          </section>
+        <div id="ppo-loop" aria-label="PPO training loop"></div>
+        <div id="learning-chart"></div>
+        <div class="seed-comparison">
+          <h3>Learning isn’t a straight line.</h3>
+          <p>
+            Seed <span data-seed="first"></span> regressed on one track under
+            its deterministic mean action. The selected policy finishes every
+            showcase track. Both runs stay in the results.
+          </p>
+          <table>
+            <caption>
+              Final policies · stochastic completion
+            </caption>
+            <thead>
+              <tr>
+                <th>Seed</th>
+                <th>Showcase</th>
+                <th>Unseen</th>
+                <th>Deterministic finishes</th>
+              </tr>
+            </thead>
+            <tbody id="seed-rows"></tbody>
+          </table>
+          <a
+            href="https://github.com/joeycatic/ReinforcedRacing/blob/main/train/ppo.py"
+            >Read the PPO implementation →</a
+          >
         </div>
-        <section class="analysis-panel" aria-label="Training heatmaps">
-          <div class="analysis-layers">
-            <p class="eyebrow">THE LEARNING LINE</p>
-            <div>
-              <label
-                ><input id="visits-toggle" type="checkbox" />Driving line</label
-              ><label
-                ><input id="crashes-toggle" type="checkbox" />Crash
-                locations</label
-              >
-              <label data-race-only
-                ><input id="sensors-toggle" type="checkbox" />AI vision</label
-              >
-            </div>
-            <p id="heatmap-summary" aria-live="polite">
-              50 stochastic runs per stage
-            </p>
-          </div>
-          <div class="analysis-stage">
-            <div>
-              <label for="heatmap-snapshot">HEATMAP TRAINING STAGE</label
-              ><output id="heatmap-stage" for="heatmap-snapshot">FINAL</output>
-            </div>
-            <input
-              id="heatmap-snapshot"
-              type="range"
-              min="0"
-              max="5"
-              step="1"
-              value="5"
-            />
-            <div class="scale-caption">
-              <span>FIRST ATTEMPT</span><span>LOW <i></i> HIGH (LOG)</span
-              ><span>FINAL POLICY</span>
-            </div>
-          </div>
-        </section>
-        <div id="notice" role="status" aria-live="polite" class="notice">
-          One lap. No shortcuts. Take the wheel when you’re ready.
+      </section>
+      <section id="parity" class="engineering">
+        <div class="section-heading">
+          <h2>
+            TRAINED IN PYTHON.<br />RACING IN YOUR BROWSER.<br />SAME CAR.
+          </h2>
+          <p>
+            One set of actions. Two implementations. The Python trajectory and a
+            TypeScript simulation overlap below. Without this, the AI you race
+            would drive worse than the one I trained.
+          </p>
         </div>
-      </main>
-      <footer>
-        <span>REINFORCEMENT LEARNING, ON THE RACING LINE.</span
-        ><span>FROM SCRATCH PPO <i>×</i> LIVE IN YOUR BROWSER</span>
-      </footer>
-    </div>
-    <script type="module" src="/src/main.ts"></script>
+        <div id="parity-demo"></div>
+      </section>
+      <section id="ship" class="engineering">
+        <h2>BUILT TO SHIP.</h2>
+        <div class="ship-copy">
+          <p>
+            Versioned physics, observations and assets. Every model and replay
+            is verified by SHA-256 before use. Local fonts and WebAssembly. A
+            static build deployed through GitHub Pages.
+          </p>
+          <p>
+            CI checks the Python simulation, browser parity and production build
+            on each change.
+          </p>
+          <a
+            href="https://github.com/joeycatic/ReinforcedRacing/actions/workflows/ci.yml"
+            >View CI runs →</a
+          >
+          <a href="https://github.com/joeycatic/ReinforcedRacing"
+            >Explore the repository →</a
+          >
+        </div>
+      </section>
+    </main>
+    <footer>
+      <span>Built by joeycatic</span
+      ><a href="https://github.com/joeycatic">GitHub</a
+      ><a href="./race.html">See you on the starting line →</a>
+    </footer>
+    <script type="module" src="/src/intro/main.ts"></script>
   </body>
 </html>

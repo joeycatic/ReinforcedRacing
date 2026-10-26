@@ -46,5 +46,14 @@ export default defineConfig({
     },
   ],
   server: { host: "127.0.0.1" },
-  build: { target: "es2022", chunkSizeWarningLimit: 800 },
+  build: {
+    rollupOptions: {
+      input: {
+        intro: fileURLToPath(new URL("./index.html", import.meta.url)),
+        race: fileURLToPath(new URL("./race.html", import.meta.url)),
+      },
+    },
+    target: "es2022",
+    chunkSizeWarningLimit: 800,
+  },
 });

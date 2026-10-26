@@ -19,6 +19,16 @@ test("production site works under a GitHub Pages repository prefix with local as
       external.push(request.url());
   });
   await page.goto("/racing-rl/");
+  await expect(page.locator("h1")).toContainText(
+    "A CAR THAT TAUGHT ITSELF TO DRIVE",
+  );
+  await expect(page.locator(".stat")).toHaveCount(4);
+  await expect(page.locator("#hero-status")).toHaveText(
+    "LIVE · final AI lapping Broad Sweep",
+    { timeout: 30000 },
+  );
+  await page.getByRole("link", { name: "Race the AI", exact: true }).click();
+  await expect(page).toHaveURL(/race\.html$/);
   await expect(page.locator("#start-button")).toBeEnabled({ timeout: 30000 });
   await page.locator("#start-button").click();
   await expect(page.locator("#race-state")).toHaveText("RACE IN PROGRESS", {
@@ -64,6 +74,17 @@ test("production site works under a GitHub Pages repository prefix with local as
     ] as { path: string }[])
       expect(existsSync("dist/assets/" + file.path)).toBe(true);
   }
+  for (const asset of [
+    manifest.site,
+    manifest.parity_demo,
+    ...manifest.medals.flatMap(
+      (m: {
+        model: { path: string };
+        replays: Record<string, { path: string }>;
+      }) => [m.model, ...Object.values(m.replays)],
+    ),
+  ])
+    expect(existsSync("dist/assets/" + asset.path)).toBe(true);
   // A real static host does not rewrite a missing route to the application entry point.
   expect((await request.get("/racing-rl/e2e/runner.html")).status()).toBe(404);
 });

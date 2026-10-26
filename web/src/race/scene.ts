@@ -7,6 +7,7 @@ import {
   Text,
 } from "pixi.js";
 import type { CarState, Vec2 } from "../sim/types";
+import { cameraZoom, kerbStripes, gateOrdinals } from "./stadium";
 import { speed } from "../sim/physics";
 import { Track } from "../sim/track";
 import { interpolate, type RaceEngine } from "./engine";
@@ -21,8 +22,7 @@ import {
   type GhostRun,
 } from "../viewer/playback";
 
-const PLAYER = 0x75f4c2,
-  AI = 0xffaa73;
+import { formulaCar, LIVERIES } from "./car";
 const line = (
   graphics: Graphics,
   points: Vec2[],
@@ -34,39 +34,14 @@ const line = (
   for (const point of points.slice(1)) graphics.lineTo(point[0], -point[1]);
   graphics.closePath().stroke({ color, width, alpha, join: "round" });
 };
-function car(color: number, ghost = false): Container {
-  const body = new Container();
-  body.addChild(
-    new Graphics()
-      .roundRect(-2.3, -1.15, 4.6, 2.3, 0.4)
-      .fill({ color: 0x000000, alpha: 0.35 }),
-  );
-  const shape = new Graphics();
-  for (const x of [-1.4, 1.2])
-    for (const y of [-1.05, 0.75])
-      shape.rect(x - 0.4, y, 0.8, 0.3).fill(0x080d12);
-  shape
-    .poly([
-      -2, -0.85, 1.25, -0.85, 2.15, -0.58, 2.15, 0.58, 1.25, 0.85, -2, 0.85,
-    ])
-    .fill(color);
-  shape.poly([-0.7, -0.64, 0.55, -0.6, 0.85, 0.6, -0.7, 0.64]).fill(0x1c3437);
-  shape.rect(-1.85, -0.93, 0.25, 1.86).fill(0xeff9ef);
-  shape
-    .rect(1.9, -0.63, 0.2, 0.38)
-    .fill(0xf5ffe9)
-    .rect(1.9, 0.25, 0.2, 0.38)
-    .fill(0xf5ffe9);
-  body.addChild(shape);
-  if (ghost) body.alpha = 0.28;
-  return body;
-}
 export class RaceScene {
+  follow: "player" | "ai" = "player";
+  playerVisible = true;
   readonly app = new Application();
   private world = new Container();
-  private player = car(PLAYER);
-  private ai = car(AI);
-  private ghost = car(0xe7f3e9, true);
+  private player!: Sprite;
+  private ai!: Sprite;
+  private ghost!: Sprite;
   private terrain = new Container();
   private heatLayer = new Container();
   private heatTextures: Texture[] = [];
@@ -97,6 +72,8 @@ export class RaceScene {
     height: number;
   } | null = null;
   private dirty = true;
+  private slowFrames = 0;
+  private frameSeconds = 1 / 60;
   private lastView: "race" | "ghosts" | null = null;
   private lastGhostSeconds = -1;
   private lastSensors = false;
@@ -122,7 +99,7 @@ export class RaceScene {
     await this.app.init({
       width: this.host.clientWidth,
       height: this.host.clientHeight,
-      background: 0x131e22,
+      background: visualConfig.stadium.grass[1],
       antialias: false,
       resolution: Math.min(devicePixelRatio, 2),
       autoDensity: true,
@@ -136,6 +113,13 @@ export class RaceScene {
     this.app.canvas.setAttribute("role", "img");
     this.host.append(this.app.canvas);
     this.app.stage.addChild(this.world);
+    this.player = formulaCar(LIVERIES.player, this.app.renderer);
+    this.ai = formulaCar(LIVERIES.ai, this.app.renderer);
+    this.ghost = formulaCar(
+      { ...LIVERIES.ai, body: 0xe7f3e9 },
+      this.app.renderer,
+    );
+    this.ghost.alpha = 0.28;
     this.world.addChild(
       this.terrain,
       this.heatLayer,
@@ -151,6 +135,7 @@ export class RaceScene {
   }
   setTrack(track: Track): void {
     this.track = track;
+    this.terrain.cacheAsTexture(false);
     this.terrain.removeChildren().forEach((child) => child.destroy());
     this.clearMarks();
     this.setHeatmap(null, false, false, { visits: 0, crashes: 0 });
@@ -168,26 +153,60 @@ export class RaceScene {
       highX = Math.max(...xs) + 100,
       lowY = Math.min(...ys) - 100,
       highY = Math.max(...ys) + 100;
-    for (let x = Math.floor(lowX / 20) * 20; x < highX; x += 20)
-      bg.moveTo(x, -lowY).lineTo(x, -highY);
-    for (let y = Math.floor(lowY / 20) * 20; y < highY; y += 20)
-      bg.moveTo(lowX, -y).lineTo(highX, -y);
-    bg.stroke({ width: 0.12, color: 0x2c3e40, alpha: 0.35 });
+    const stadium = visualConfig.stadium;
+    for (
+      let y = Math.floor(lowY / stadium.grassBand) * stadium.grassBand;
+      y < highY;
+      y += stadium.grassBand
+    )
+      bg.rect(
+        lowX,
+        -y - stadium.grassBand,
+        highX - lowX,
+        stadium.grassBand,
+      ).fill(stadium.grass[Math.abs(Math.round(y / stadium.grassBand)) % 2]);
     this.terrain.addChild(bg);
     const route = new Graphics();
-    line(route, d.centerline, 0x0c1419, d.width + 4);
-    line(route, d.centerline, 0x84948d, d.width + 1.3);
-    line(route, d.centerline, 0x293237, d.width);
-    // Narrow edge marks read at speed without obscuring the road.
+    line(route, d.centerline, 0x46792e, d.width + 4);
+    line(route, d.centerline, stadium.tarmac, d.width);
     for (const edge of [d.left, d.right])
-      for (let i = 0; i < edge.length; i += 8) {
-        route.moveTo(edge[i][0], -edge[i][1]);
-        for (let k = 1; k <= 4; k++) {
-          const p = edge[(i + k) % edge.length];
-          route.lineTo(p[0], -p[1]);
-        }
-        route.stroke({ width: 0.45, color: 0xced6c8, alpha: 0.8 });
+      for (const stripe of kerbStripes(edge, stadium.kerbStripe)) {
+        route.moveTo(stripe.points[0][0], -stripe.points[0][1]);
+        for (const p of stripe.points.slice(1)) route.lineTo(p[0], -p[1]);
+        route.stroke({
+          color: stadium.kerb[stripe.red ? 0 : 1],
+          width: stadium.kerbWidth,
+        });
       }
+    for (let arc = 0; arc < track.length; arc += 12) {
+      const [a] = track.sample(arc),
+        [b] = track.sample(arc + 3);
+      route
+        .moveTo(a[0], -a[1])
+        .lineTo(b[0], -b[1])
+        .stroke({ color: 0xe9e4d6, width: 0.16, alpha: 0.65 });
+    }
+    for (const ordinal of gateOrdinals(
+      d.checkpoints.length,
+      stadium.gateEvery,
+    )) {
+      const [p, heading] = track.sample(d.checkpoints[ordinal]);
+      const nx = -Math.sin(heading),
+        ny = Math.cos(heading),
+        half = d.width / 2;
+      route
+        .moveTo(p[0] - nx * half, -p[1] + ny * half)
+        .lineTo(p[0] + nx * half, -p[1] - ny * half)
+        .stroke({ color: stadium.gate, width: 0.55, alpha: 0.85 });
+      for (const side of [-1, 1])
+        route
+          .circle(
+            p[0] + side * nx * (half + 0.7),
+            -p[1] - side * ny * (half + 0.7),
+            0.8,
+          )
+          .fill(stadium.gate);
+    }
     this.terrain.addChild(route);
     const [start, heading] = track.sample(0),
       grid = new Container();
@@ -202,6 +221,10 @@ export class RaceScene {
           .fill((x + y) % 2 ? 0x233035 : 0xe3e9d9);
     grid.addChild(checkers);
     this.terrain.addChild(grid);
+    this.terrain.cacheAsTexture({
+      resolution: visualConfig.rendering.terrainResolution,
+      antialias: false,
+    });
     const bounds = this.bounds();
     this.camera = { x: bounds.x, y: bounds.y, zoom: this.fitZoom() };
   }
@@ -232,7 +255,32 @@ export class RaceScene {
     ghostFrame: number[] | null,
   ): void {
     if (!this.track) return;
-    this.player.visible = true;
+    // Keep the full-screen view responsive on slow renderers without changing dt.
+    if (engine.phase === "countdown" || engine.phase === "racing") {
+      const quality = visualConfig.rendering;
+      this.frameSeconds =
+        (1 - quality.averageWeight) * this.frameSeconds +
+        quality.averageWeight * seconds;
+      this.slowFrames =
+        this.frameSeconds > 1 / quality.targetFps ? this.slowFrames + 1 : 0;
+      if (
+        this.slowFrames >= quality.slowFrames &&
+        this.app.renderer.resolution > quality.minimumResolution
+      ) {
+        this.app.renderer.resize(
+          this.host.clientWidth,
+          this.host.clientHeight,
+          Math.max(
+            quality.minimumResolution,
+            this.app.renderer.resolution * quality.resolutionScale,
+          ),
+        );
+        this.slowFrames = 0;
+        this.frameSeconds = 1 / 60;
+        this.dirty = true;
+      }
+    }
+    this.player.visible = this.playerVisible;
     this.ai.visible = true;
     this.fleet.visible = false;
     const player = interpolate(
@@ -270,16 +318,15 @@ export class RaceScene {
           .stroke({ color: 0xffbc87, width: 0.18, alpha: 0.6 });
       });
     }
+    const target = this.follow === "ai" ? ai : player;
     const overview = engine.phase === "ready";
     const bounds = this.bounds();
-    const zoom = overview
-      ? this.fitZoom()
-      : Math.max(3.1, 7.5 / (1 + speed(player) / 70));
+    const zoom = overview ? this.fitZoom() : cameraZoom(speed(target));
     const response =
       overview || this.reduced ? 1 : 1 - Math.exp(-Math.max(0, seconds) * 5);
     const ahead = overview ? 0 : 7;
-    const x = overview ? bounds.x : player.x + Math.cos(player.psi) * ahead;
-    const y = overview ? bounds.y : -player.y - Math.sin(player.psi) * ahead;
+    const x = overview ? bounds.x : target.x + Math.cos(target.psi) * ahead;
+    const y = overview ? bounds.y : -target.y - Math.sin(target.psi) * ahead;
     const moving =
       Math.abs(x - this.camera.x) > 1e-4 ||
       Math.abs(y - this.camera.y) > 1e-4 ||
@@ -376,7 +423,15 @@ export class RaceScene {
     this.fleet.addChild(this.fleetLeaders);
     runs.forEach((run, index) => {
       const color = snapshotColor(index, runs.length),
-        sprite = car(color, true);
+        sprite = formulaCar(
+          {
+            ...LIVERIES.ai,
+            body: color,
+            light: color,
+            number: String(index + 1),
+          },
+          this.app.renderer,
+        );
       sprite.alpha = 0.68;
       const label = new Text({
         text: snapshotLabel(run.snapshot),

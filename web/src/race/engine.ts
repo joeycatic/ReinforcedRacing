@@ -45,6 +45,10 @@ export class RaceEngine {
     this.countdownTicks = Math.round(3 / this.config.physics.dt);
     this.phase = "countdown";
   }
+  launch(): void {
+    this.reset();
+    this.phase = "racing";
+  }
   reset(): void {
     this.generation++;
     this.player.restart();

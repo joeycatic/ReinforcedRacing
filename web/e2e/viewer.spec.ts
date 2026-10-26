@@ -145,3 +145,77 @@ test("watching ghosts pauses and preserves a race on the same circuit", async ({
   await page.locator("#pause-button").click();
   await expect(page.locator("#race-state")).toHaveText("RACE IN PROGRESS");
 });
+
+test("Watch Formula sprites keep their texture-to-world scale", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    globalThis.__PIXI_APP_INIT__ = (app) => {
+      if ("stage" in app)
+        (
+          window as Window & { watchApp?: import("pixi.js").Application }
+        ).watchApp = app;
+    };
+  });
+  await page.goto("/race.html#watch");
+  await expect(page.locator("#system-status")).toHaveText("GHOSTS READY", {
+    timeout: 30000,
+  });
+  const widths = async () =>
+    page.evaluate(() => {
+      const app = (
+        window as Window & { watchApp?: import("pixi.js").Application }
+      ).watchApp!;
+      const collect = (node: import("pixi.js").Container): number[] => {
+        if (!node.visible) return [];
+        const own =
+          "anchor" in node &&
+          !("text" in node) &&
+          (node as import("pixi.js").Sprite).texture
+            ? [node.getBounds().width]
+            : [];
+        return [...own, ...node.children.flatMap(collect)];
+      };
+      return collect(app.stage);
+    });
+  await expect.poll(async () => (await widths()).length).toBe(6);
+  for (const width of await widths()) {
+    expect(width).toBeGreaterThan(6);
+    expect(width).toBeLessThan(60);
+  }
+});
+test("returning from Watch on a different track shows the new race setup", async ({
+  page,
+}) => {
+  await page.goto("/race.html");
+  await expect(page.locator("#start-button")).toBeEnabled({ timeout: 30000 });
+  await page.locator("#start-button").click();
+  await expect(page.locator("#race-state")).toHaveText("RACE IN PROGRESS", {
+    timeout: 5000,
+  });
+  await page.locator("#mode-ghosts").click();
+  await expect(page.locator("#system-status")).toHaveText("GHOSTS READY");
+  await page.locator('[data-track="technical"]').click();
+  await expect(page.locator("#circuit-name")).toHaveText("TECHNICAL LOOP");
+  await page.locator("#mode-race").click();
+  await expect(page.locator("#race-state")).toHaveText("GRID READY");
+  await expect(page.locator("#start-button")).toBeVisible();
+  await page.locator("#start-button").click();
+  await expect(page.locator("#race-state")).toHaveText("START SEQUENCE");
+});
+test("resuming after Change race reveals the live circuit", async ({
+  page,
+}) => {
+  await page.goto("/race.html");
+  await expect(page.locator("#start-button")).toBeEnabled({ timeout: 30000 });
+  await page.locator("#start-button").click();
+  await expect(page.locator("#race-state")).toHaveText("RACE IN PROGRESS", {
+    timeout: 5000,
+  });
+  await page.locator(".race-actions .change-race").click();
+  await expect(page.locator("#prerace")).toBeVisible();
+  await expect(page.locator("#pause-button")).toContainText("Resume race");
+  await page.locator("#pause-button").click();
+  await expect(page.locator("#race-state")).toHaveText("RACE IN PROGRESS");
+  await expect(page.locator("#prerace")).toBeHidden();
+});

@@ -47,8 +47,10 @@ def select_medals(
                 s,
             ),
         )
-        previous = {t: eligible[step].get(t) for t in author}
-        choices.append(MedalChoice(medal, step, previous))
+        laps = {t: eligible[step].get(t) for t in author}
+        # A missing lap must not forget the closest faster medal on that track.
+        previous.update({t: lap for t, lap in laps.items() if lap is not None})
+        choices.append(MedalChoice(medal, step, laps))
         del remaining[step]
     return list(reversed(choices))
 

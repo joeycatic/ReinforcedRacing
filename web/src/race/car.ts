@@ -6,6 +6,7 @@ import {
   type Renderer,
   type Texture,
 } from "pixi.js";
+export const CAR_PIXELS_PER_METER = 24;
 export interface Livery {
   body: number;
   dark: number;
@@ -42,7 +43,7 @@ export function formulaCar(livery: Livery, renderer: Renderer): Sprite {
   if (cached) {
     const sprite = new Sprite(cached);
     sprite.anchor.set(0.5);
-    sprite.scale.set(1 / 24);
+    sprite.scale.set(1 / CAR_PIXELS_PER_METER);
     return sprite;
   }
   const source = new Container(),
@@ -88,12 +89,12 @@ export function formulaCar(livery: Livery, renderer: Renderer): Sprite {
     },
   });
   label.anchor.set(0.5);
-  label.scale.set(1 / 24);
+  label.scale.set(1 / CAR_PIXELS_PER_METER);
   label.position.set(1.08, 0);
   label.rotation = Math.PI / 2;
   source.addChild(label);
   const bake = new Container();
-  source.scale.set(24);
+  source.scale.set(CAR_PIXELS_PER_METER);
   bake.addChild(source);
   const texture = renderer.generateTexture({
     target: bake,
@@ -103,7 +104,7 @@ export function formulaCar(livery: Livery, renderer: Renderer): Sprite {
   cache.set(key, texture);
   const sprite = new Sprite(texture);
   sprite.anchor.set(0.5);
-  sprite.scale.set(1 / 24);
+  sprite.scale.set(1 / CAR_PIXELS_PER_METER);
   bake.destroy({ children: true });
   return sprite;
 }

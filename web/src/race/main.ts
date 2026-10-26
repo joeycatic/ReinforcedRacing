@@ -135,6 +135,7 @@ function togglePause(): void {
   if (!engine || loading) return;
   if (engine.phase === "paused") {
     engine.resume();
+    prerace.hidden = true;
     focusCircuit();
     announce("Back on track.");
   } else {
@@ -254,6 +255,7 @@ async function selectRace(preserveRace = false): Promise<void> {
       );
       return;
     }
+    if (engine?.phase === "ready") prerace.hidden = false;
     if (engine?.phase === "paused") {
       announce("Your race is paused. Resume when you are ready.");
       return;

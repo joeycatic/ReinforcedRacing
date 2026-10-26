@@ -53,14 +53,19 @@
 
 ```
 ladder = [author]                       # fastest first
+previous = dict(author)                # nearest selected faster lap per track
 for medal in ("gold", "silver", "bronze"):
-    previous = ladder[-1]
     def ok(c): every track where both c and previous have laps: c_lap >= previous_lap * (1 + gap)
     full    = [c for c in candidates if all tracks finished and ok(c)]
     partial = [c for c in candidates if any track finished and ok(c)]
     pick = min(full, key=total_lap) if full else max(partial, key=(tracks finished, -total over finished))  # if any
     stop when no pick; never reuse a step
+    previous.update({track: lap for track, lap in pick.lap_times.items() if lap is not None})
+    ladder.append(pick)
 return reversed(ladder[1:]) as MedalChoice list (bronze first)
+
+# Review correction: retain the faster time when a chosen medal lacks that track.
+# Otherwise a later medal can incorrectly become faster than Author across a null gap.
 ```
 
 - [x] **Step 4: Run** the tests → PASS.

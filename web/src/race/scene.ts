@@ -22,7 +22,7 @@ import {
   type GhostRun,
 } from "../viewer/playback";
 
-import { formulaCar, LIVERIES } from "./car";
+import { formulaCar, LIVERIES, CAR_PIXELS_PER_METER } from "./car";
 const line = (
   graphics: Graphics,
   points: Vec2[],
@@ -477,7 +477,8 @@ export class RaceScene {
         x = pose.frame[0],
         y = -pose.frame[1];
       car.scale.set(
-        Math.max(1, visualConfig.ghost.minimumPixelsPerMeter / zoom),
+        Math.max(1, visualConfig.ghost.minimumPixelsPerMeter / zoom) /
+          CAR_PIXELS_PER_METER,
       );
       car.position.set(x, y);
       car.rotation = -pose.frame[2];

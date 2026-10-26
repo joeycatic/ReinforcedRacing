@@ -79,3 +79,46 @@ Duration  1.12s
 
 Evidence logs: `/tmp/m8-task2-red.log`, `/tmp/m8-task2-green.log`,
 `/tmp/m8-task2-export.log`, `/tmp/m8-task2-test.log`, and prewarm logs above.
+
+## Review follow-up — shared deterministic replay cache
+
+Review requested removing the duplicate deterministic replay-cache serialization from
+medal and attempt exports. Extracted `deterministic_replay_cache` in `export/assets.py`;
+both callers retain their own checkpoint evidence, identities, lap/metadata checks and
+publication. The shared helper keeps the stronger exact expected replay-file set check.
+This also repairs an existing medal-cache gap: an empty file map used to pass `all()`
+and fail later at publication. Expanded the existing complete-export test to run a
+synthetic medal through the full exporter and verify incomplete medal cache repair.
+Existing attempt tests continue exercising corrupt/incomplete repair and cache reuse.
+
+Exact commands and output:
+
+```text
+uv run --locked ruff format tests/test_export.py
+1 file reformatted
+uv run --locked pytest tests/test_export.py -k complete_export -v > /tmp/m8-task2-refactor-red.log 2>&1
+FAILED test_complete_export_integrity_and_cache_repair
+KeyError: 'custom.replay.v1.json'
+1 failed, 13 deselected, 12 warnings in 1.48s
+
+uv run --locked ruff format export/assets.py tests/test_export.py
+1 file reformatted, 1 file left unchanged
+uv run --locked pytest tests/test_export.py -v > /tmp/m8-task2-refactor-green.log 2>&1
+14 passed, 14 warnings in 7.29s
+
+make test > /tmp/m8-task2-refactor-test.log 2>&1
+All checks passed!
+66 files already formatted
+106 passed, 14 warnings in 21.76s
+tsc --noEmit  # passed
+Test Files  8 passed (8)
+Tests  44 passed (44)
+Duration  1.11s
+
+git diff --check  # clean
+```
+
+All commands succeeded except the intended RED test. Additional warnings come from
+additional synthetic ONNX exports in the expanded medal test; all are existing Torch
+ONNX deprecations. No `make export` rerun: eval/sim fingerprint inputs and all committed
+public assets are unchanged. No new dependencies or scope changes.

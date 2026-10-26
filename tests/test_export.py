@@ -125,7 +125,23 @@ def test_complete_export_integrity_and_cache_repair(
     monkeypatch.setattr(assets, "make_track_pool", lambda split: pool)
     monkeypatch.setattr(recording, "load_env", lambda: EnvConfig(1, 3))
     monkeypatch.setattr(evaluate, "load_env", lambda: EnvConfig(1, 3))
-    monkeypatch.setattr(assets, "load_medals", lambda: [])
+    from eval.medals import MedalChoice
+
+    medal_step = 2785280
+    medal_hash = json.loads((ROOT / "experiments/medal-selection.json").read_text())["candidates"][
+        str(medal_step)
+    ]["checkpoint_sha256"]
+    original_load = assets.load_checkpoint
+
+    def load_for_export(path: Path) -> dict:
+        if path.parent.name == "checkpoints":
+            return {**policy(), "global_step": medal_step, "source_sha256": medal_hash}
+        return original_load(path)
+
+    monkeypatch.setattr(assets, "load_checkpoint", load_for_export)
+    monkeypatch.setattr(
+        assets, "load_medals", lambda: [MedalChoice("gold", medal_step, {"custom": None})]
+    )
     monkeypatch.setattr(assets, "load_attempts", lambda: {})
     monkeypatch.setattr(
         assets,
@@ -151,6 +167,14 @@ def test_complete_export_integrity_and_cache_repair(
         assert len(decode_replay(replay)) == replay["metadata"]["physics_ticks"] + 1 == 7
         heatmap = json.loads((root / snapshot["heatmaps"]["custom"]["path"]).read_text())
         assert heatmap["visit_count"] == 12
+    medal_cache = Path(config.evaluation_dir) / "medals" / str(medal_step) / "summary.json"
+    cached = json.loads(medal_cache.read_text())
+    cached["files"] = {}
+    medal_cache.write_text(json.dumps(cached))
+    assert assets.build_assets(config) == manifest
+    assert json.loads(medal_cache.read_text())["files"]
+    for asset in manifest["medals"][0]["replays"].values():
+        assert artifacts.sha256(root / asset["path"]) == asset["sha256"]
     reports = artifacts.run_evaluation(config)
     damaged = Path(config.evaluation_dir) / "0/custom.replay.v1.json"
     damaged.write_text("corrupted")

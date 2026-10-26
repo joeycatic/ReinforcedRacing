@@ -25,7 +25,7 @@ from export.onnx import export_policy
 from export.site import build_parity_demo, build_site_data
 from sim import OBS_VERSION, PHYSICS_VERSION, TRACK_VERSION
 from sim.config import ROOT
-from sim.pool import make_track_pool
+from sim.pool import TrackPool, make_track_pool
 from train.ppo import load_checkpoint
 
 VERSIONS = {
@@ -43,6 +43,33 @@ def descriptor(root: Path, path: Path) -> dict:
         "sha256": sha256(path),
         "bytes": path.stat().st_size,
     }
+
+
+def deterministic_replay_cache(
+    checkpoint: dict, pool: TrackPool, config: ExportConfig, directory: Path
+) -> dict:
+    """Load verified deterministic replays, regenerating an incomplete or stale cache."""
+    signature = fingerprint(checkpoint, config, [pool])
+    cache = directory / "summary.json"
+    cached = json.loads(cache.read_text()) if cache.exists() else {}
+    names = {f"{track.id}.replay.v1.json" for track in pool.tracks}
+    if (
+        cached.get("fingerprint") != signature
+        or set(cached.get("files", {})) != names
+        or not all(
+            (directory / name).is_file() and sha256(directory / name) == digest
+            for name, digest in cached.get("files", {}).items()
+        )
+    ):
+        summary, replays, _ = record_runs(checkpoint, pool, config, deterministic=True)
+        files = {}
+        for track, replay in zip(pool.tracks, replays, strict=True):
+            name = f"{track.id}.replay.v1.json"
+            write_json(directory / name, replay)
+            files[name] = sha256(directory / name)
+        cached = {"fingerprint": signature, "files": files, "summary": summary}
+        write_json(cache, cached)
+    return cached
 
 
 def export_attempts(stage: Path, manifest: dict, config: ExportConfig) -> dict:
@@ -73,29 +100,8 @@ def export_attempts(stage: Path, manifest: dict, config: ExportConfig) -> dict:
                 if checkpoint["source_sha256"] != expected_hash:
                     raise ValueError(f"Attempt checkpoint changed since selection: {path}")
                 checkpoint["requested_step"] = f"attempt-{choice.step}"
-                signature = fingerprint(checkpoint, config, [showcase])
                 directory = ROOT / config.evaluation_dir / "attempts" / str(choice.step)
-                cache = directory / "summary.json"
-                cached = json.loads(cache.read_text()) if cache.exists() else {}
-                names = {f"{track.id}.replay.v1.json" for track in showcase.tracks}
-                if (
-                    cached.get("fingerprint") != signature
-                    or set(cached.get("files", {})) != names
-                    or not all(
-                        (directory / name).is_file() and sha256(directory / name) == digest
-                        for name, digest in cached.get("files", {}).items()
-                    )
-                ):
-                    summary, replays, _ = record_runs(
-                        checkpoint, showcase, config, deterministic=True
-                    )
-                    files = {}
-                    for track, replay in zip(showcase.tracks, replays, strict=True):
-                        name = f"{track.id}.replay.v1.json"
-                        write_json(directory / name, replay)
-                        files[name] = sha256(directory / name)
-                    cached = {"fingerprint": signature, "files": files, "summary": summary}
-                    write_json(cache, cached)
+                cached = deterministic_replay_cache(checkpoint, showcase, config, directory)
                 name = f"{track_id}.replay.v1.json"
                 source = directory / name
                 if sha256(source) != cached["files"][name]:
@@ -199,22 +205,8 @@ def build_assets(config: ExportConfig) -> dict:
             ):
                 raise ValueError(f"Medal checkpoint changed since selection: {path}")
             checkpoint["requested_step"] = f"medal-{choice.medal}"
-            signature = fingerprint(checkpoint, config, [showcase])
             directory = ROOT / config.evaluation_dir / "medals" / str(choice.step)
-            cache = directory / "summary.json"
-            cached = json.loads(cache.read_text()) if cache.exists() else {}
-            if cached.get("fingerprint") != signature or not all(
-                (directory / name).is_file() and sha256(directory / name) == digest
-                for name, digest in cached.get("files", {}).items()
-            ):
-                summary, replays, _ = record_runs(checkpoint, showcase, config, deterministic=True)
-                files = {}
-                for track, replay in zip(showcase.tracks, replays, strict=True):
-                    name = f"{track.id}.replay.v1.json"
-                    write_json(directory / name, replay)
-                    files[name] = sha256(directory / name)
-                cached = {"fingerprint": signature, "files": files, "summary": summary}
-                write_json(cache, cached)
+            cached = deterministic_replay_cache(checkpoint, showcase, config, directory)
             laps = {
                 t.id: cached["summary"]["tracks"][t.id]["mean_lap_time"] for t in showcase.tracks
             }

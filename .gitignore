@@ -5,7 +5,6 @@ __pycache__/
 *.py[cod]
 artifacts/
 web/node_modules/
-web/public/assets/
 web/public/assets.previous/
 web/public/.assets-*/
 web/dist/

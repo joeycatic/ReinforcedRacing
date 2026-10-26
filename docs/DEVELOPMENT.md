@@ -252,7 +252,8 @@ Export produces `web/public/assets/manifest.json`, simulation settings, three tr
 six ONNX policies, 18 quantized/delta ghosts, and 18 sparse heatmaps (50 stochastic
 runs each). Every asset has a size/hash descriptor, and the loader rejects incompatible
 physics/obs/track/replay/heatmap versions before fetching dependent files. The bundle
-is self-contained. Generated models/evaluations/bundles are ignored; preserve the
+is self-contained. The exported bundle for the reference run is committed so a fresh
+clone can play and deploy; checkpoints and evaluations stay ignored, so preserve the
 training checkpoints to rebuild them. The race interface uses this bundle directly.
 
 ONNX accepts raw float64 `[batch,22]` observations and includes frozen normalization.
@@ -322,8 +323,39 @@ starting at zero. Sampling wraps across the finish. JSON loading checks the vers
 finite geometry, derived arrays, and track validity, preserving exported numbers.
 The browser loads this geometry directly instead of regenerating it.
 
+## Learning-curve figure
+
+`docs/images/learning-curve.svg` is generated from the reference run's
+`metrics.jsonl` and the M4 snapshot evaluation summary:
+
+```sh
+uv run --locked python -m tools.plot_learning
+```
+
+## Deploy
+
+Pushing to `main` runs two GitHub Actions workflows: `ci.yml` (`make test` and a
+production build) and `pages.yml` (builds `web/dist/` from the committed assets and
+publishes it to GitHub Pages). Enable Pages once under **Settings → Pages → Source:
+GitHub Actions**. Vite uses relative paths, so the site works from any repository
+sub-path. Training and export never run in CI; re-export locally and commit
+`web/public/assets/` to ship a new policy.
+
+## Recording demo GIFs
+
+Run `make web-dev`, record a 5–8 second clip with your OS or browser screen recorder,
+and convert it with ffmpeg:
+
+```sh
+mkdir -p docs/media
+ffmpeg -i recording.webm -vf 'fps=15,scale=960:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse' -loop 0 docs/media/race.gif
+```
+
+Good clips: the countdown and a corner against the orange AI (`race.gif`), and
+**Watch it learn** at 2× from the common start (`ghosts.gif`).
+
 ## Current status
 
-The complete M1–M6 application and deployment instructions are documented in
-[the main README](../README.md). Physical gamepad/laptop checks and human keyboard
-playtesting remain outside the automated results.
+The complete M1–M6 application is described in [the main README](../README.md).
+Physical gamepad/laptop checks and human keyboard playtesting remain outside the
+automated results.

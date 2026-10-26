@@ -86,3 +86,12 @@
 - Put presentation limits in `web/src/viewer/visual-config.ts`; use bounded drift particles and recycled batches of tire-mark geometry, stop their time on pause, honor reduced motion (including preference changes), and avoid redrawing unchanged paused/overview scenes. No new dependencies are needed.
 - Keep Vite's relative base and locally bundled WASM/fonts; include `.nojekyll` and validate the exact production directory under `/racing-rl/` with a static file host and no SPA fallback. Generated model/data assets stay outside Git, so publish the prepared dist contents instead of pretending a source-only CI checkout can train/export them automatically.
 - Make the README a complete entry point with architecture, actual result tables, training/export requirements, deployment instructions and explicitly requested GIF recording slots. Retain detailed M1–M5 instructions in `docs/DEVELOPMENT.md`; do not fabricate recordings or add broken GIF image links.
+
+# Portfolio release decisions
+
+- Create `main` at the M6 head; the milestone branches were already a linear stack, so no merge commit is needed.
+- Commit the exported reference bundle (`web/public/assets/`, about 6 MB) instead of keeping it out of Git. A fresh clone can now play, and Pages can deploy from the repository, without a GPU training run. Checkpoints, evaluations and the copied ONNX runtime stay ignored; CI never trains or exports.
+- Deploy through GitHub Actions (`pages.yml`) on pushes to `main`, and run `make test` plus a production build in `ci.yml`.
+- Generate the README learning curve as a dependency-free SVG (`tools/plot_learning.py`) that adapts to light/dark mode, rather than adding matplotlib. It plots smoothed rollout return and the existing M4 snapshot completion rates; no new evaluation is run.
+- License the project as MIT.
+- Rewrite the README for first-time visitors (pitch, demo link, results, architecture) and move deployment and GIF-recording instructions to `docs/DEVELOPMENT.md`. Use the existing screenshot until real GIFs are recorded.

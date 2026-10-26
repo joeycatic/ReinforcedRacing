@@ -13,14 +13,17 @@ No install, no backend. The AI opponent is a neural network that runs in your br
 
 ![Formula cars racing on a Stadium circuit](docs/images/m7-race.png)
 
+![Progressive Watch it learn with faded trails and training progress](docs/images/m8-watch.png)
+
 - **Race the AI.** Drive against a live policy network that runs ONNX inference
   at 30 Hz in WebAssembly. Choose a showcase track and a medal opponent. Gold and Author (the final policy)
   have verified lap times on every track; only checkpoints with a 3% gap qualify.
 - **Explore the engineering.** The intro explains PPO from scratch, compares both training
   seeds, plots interactive learning curves and computes Python/browser physics parity live.
-- **Watch it learn.** Six snapshots from 0 to 6M steps start together as ghosts.
-  Heatmaps show where each stage drives and where it crashes, aggregated over
-  50 runs per stage.
+- **Watch it learn.** A one-minute sequence plays 7–10 improving attempts on each
+  showcase track, one car at a time. Faded trails reveal the emerging racing line.
+  Jump between training stages, skip to the final lap, or inspect an optional
+  crash heatmap aggregated over 50 stochastic runs at the nearest snapshot at or below that training step.
 - **No RL library.** I wrote the PPO, GAE, observation/reward normalization,
   curriculum and the vectorized simulator myself in PyTorch and NumPy, then
   checked the browser port against the Python physics to 1e-12.
@@ -91,7 +94,7 @@ simulation.
 | `train/` | PPO, curriculum, checkpoints, TensorBoard logging |
 | `eval/`, `export/` | Evaluation, replay/heatmap recording, ONNX and asset packaging |
 | `web/src/sim/` | TypeScript port of the simulation |
-| `web/src/race/`, `web/src/viewer/` | Live race, input, camera; ghost playback and heatmaps |
+| `web/src/race/`, `web/src/viewer/`, `web/src/watch/` | Live race, input, camera; progressive replays, trails and heatmaps |
 | `configs/` | Every physics, reward, PPO and export parameter |
 
 ## Run it locally
@@ -141,7 +144,8 @@ logged in [DECISIONS.md](DECISIONS.md).
 ## Site structure
 
 index.html is the intro with the live final-policy hero and exported evidence.
-race.html opens the track and medal cards; race.html#watch opens the existing ghost
-viewer directly. Both pages work under a repository subpath and request only local
-assets. The track editor is marked Coming soon; progressive playback and the editor
-remain M8 and M9. Racing requires a keyboard or gamepad.
+race.html opens the track and medal cards; watch.html plays the progressive training
+sequence. The old race.html#watch link redirects to watch.html. All three pages work
+under a repository subpath and request only local assets. Watch supports phones and
+starts paused with reduced motion; hiding the tab pauses playback. The track editor
+remains Coming soon (M9). Racing requires a keyboard or gamepad.

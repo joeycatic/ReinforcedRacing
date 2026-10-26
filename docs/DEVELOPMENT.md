@@ -352,7 +352,7 @@ ffmpeg -i recording.webm -vf 'fps=15,scale=960:-1:flags=lanczos,split[s0][s1];[s
 ```
 
 Good clips: the countdown and a corner against the orange AI (`race.gif`), and
-**Watch it learn** at 2× from the common start (`ghosts.gif`).
+**Watch it learn** progressing through attempts and leaving faded trails (`watch.gif`).
 
 ## Current status
 
@@ -363,13 +363,14 @@ automated results.
 ## M7: Stadium intro and medals
 
 Run `make web-dev`, open `/` for the intro, `/race.html` for the race, or
-`/race.html#watch` for simultaneous training replays. `make web-build` builds both HTML
-entry points, suitable for a static host without SPA route rewriting.
+`/watch.html` for progressive training replays (M8). `/race.html#watch` redirects there.
+`make web-build` builds all three HTML entry points (`index.html`, `race.html`,
+`watch.html`), suitable for a static host without SPA route rewriting.
 
 `make medals` evaluates the 36 retained seed-2 checkpoints without retraining and writes
 `configs/medals.yaml` plus `experiments/medal-selection.json`. `make export` verifies
 selected checkpoint hashes, exports medal models/replays, builds source-backed site and
-parity data, and atomically replaces the committed manifest-v2 bundle. Retained logs for
+parity data, and atomically replaces the committed manifest.v3 bundle. Retained logs for
 both seeds are needed for export, but no training artifacts are needed to run the site
 or normal CI. Only Gold and Author meet the per-track 3% separation requirement.
 
@@ -383,3 +384,42 @@ circuit, and model/WASM failures leave the intro content and static preview usab
 The parity demo compares the fixture's unrestricted physics path with the unchanged
 TypeScript kernel; crash/respawn and observation parity remain covered by the original
 600-tick fixtures.
+
+## M8: Progressive Watch it learn
+
+```sh
+make attempts   # select deterministic attempts from retained seed-2 snapshots/checkpoints
+make export     # verify selected checkpoint hashes and package manifest.v3 assets
+make web-dev    # open /watch.html
+```
+
+`make attempts` writes `configs/attempts.yaml` and `experiments/attempt-selection.json`.
+It requires the retained `artifacts/training/m3-seed2` run, not retraining. Selection
+keeps a strict improvement chain, thinned to at most ten attempts while preserving
+the first run, first finisher and final policy. The shipped counts are Sweep 10,
+Ribbon 7 and Technical 9. Regeneration resets curated headlines: inspect the replays
+before restoring descriptive headlines. `make export` adds only selected attempt
+replays, without new ONNX models; existing physics/observation/track/replay/heatmap
+versions are unchanged. The committed bundle runs without training artifacts.
+
+The timeline targets 60 seconds using capped replay compression, a 1.5-second
+endpoint hold, a three-second stall cut and a final lap at 2×. Training-progress
+segments support jumps in either direction; only preceding attempts leave trails.
+Crash locations are off by default and show the nearest snapshot at or below the
+attempt's actual training step, labelled with that stochastic stage and run count.
+Reduced motion starts paused and explicit playback stops after the selected attempt;
+hidden tabs pause without automatically resuming. Failed replay loads leave the
+track picker usable.
+
+Final verification commands (use a free E2E_PORT if 5173 is occupied):
+
+```sh
+make test
+make web-build
+E2E_PORT=5181 npm run test:e2e --prefix web
+npm run test:static --prefix web
+```
+
+The static suite serves the built three-page site under a repository subpath and
+checks that asset requests stay local. Runtime timing evidence and selection/pacing
+decisions are recorded in [DECISIONS.md](../DECISIONS.md#m8-decisions).

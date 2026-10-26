@@ -152,9 +152,11 @@ Static Vite + TS + PixiJS app, 60 FPS fixed-timestep loop with an accumulator an
 - 3-2-1 countdown, lap timer, split times at checkpoints (green/red delta vs the AI), finish screen with result and "race again".
 - Follow camera with smooth zoom by speed, plus a minimap.
 
-### 8.2 Ghost time-lapse mode
-- All ghost snapshots of one track start simultaneously as semi-transparent cars, colored on a gradient from early (cool) to final (warm), each labeled with its training step count.
-- Playback controls: play/pause, speed (0.5×–4×), restart.
+### 8.2 Progressive Watch it learn (M8 delivered)
+- `watch.html` plays improving deterministic attempts in training order, one car at a time,
+  with faded cool-to-warm trails and data-derived captions.
+- Play/pause, replay, skip to final, training-progress jumps and the showcase track picker
+  control a roughly one-minute sequence. See §9 M8 for the complete requirements.
 
 ### 8.3 Heatmap overlay
 - Toggleable layers on any track view: **driving line** (visitation intensity) and **crash locations** (red points / binned density).
@@ -172,8 +174,8 @@ frame the race; gate split deltas are blue ahead and red behind.
 
 The front page presents the live final policy, exported results, handwritten PPO,
 interactive learning curves, live Python/TypeScript parity and static deployment.
-The race and existing simultaneous ghost viewer live at race.html and race.html#watch.
-Section 8.2 is replaced by progressive playback only in M8.
+The race lives at race.html; progressive Watch it learn lives at watch.html.
+The legacy race.html#watch URL redirects to watch.html.
 
 ## 9. Milestones and acceptance criteria
 
@@ -258,7 +260,7 @@ Amends spec §8.5 (visual style) and the §8.1 opponent picker.
 correctly at phone width; race behaviour, lap times and parity results unchanged; `make test`
 and the e2e/static suites green.
 
-### M8: Progressive "Watch it learn"
+### M8: Progressive "Watch it learn" — delivered
 
 Replaces spec §8.2 (ghost time-lapse). §8.3 heatmaps stay, as an optional layer.
 

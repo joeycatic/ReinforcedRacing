@@ -1,9 +1,9 @@
 # Racing RL
 
 A deterministic 2D racing simulation with arcade bicycle physics and seeded tracks.
-**M1 and M2 are implemented:** manual driving, seeded tracks, lap timing, track JSON,
-and scalar/native batched RL environments with observations and rewards.
-See [spec.md](spec.md) for the later PPO and browser milestones.
+**M1–M3 are implemented:** manual driving, seeded tracks, lap timing, track JSON,
+scalar/native batched environments, and PPO from scratch with checkpoints and evaluation.
+See [spec.md](spec.md) for the later export and browser milestones.
 
 ## Run
 
@@ -132,6 +132,107 @@ target. There were 711 / 714 / 729 autoresets; pool/grid setup took 11.11 s. Ful
 are saved in [docs/m2-benchmark.json](docs/m2-benchmark.json). This is a desktop CPU
 measurement; performance on a particular laptop still needs measuring.
 
+## Train PPO (M3)
+
+```sh
+make setup
+make train
+make train ARGS="--run-dir artifacts/training/my-run --device cpu"
+make train ARGS="--run-dir artifacts/training/my-run --resume artifacts/training/my-run/latest.pt"
+uv run tensorboard --logdir artifacts/training
+```
+
+`configs/ppo.yaml` contains all algorithm and curriculum settings. The default uses
+64 cars × 256 steps, ten epochs/four minibatches, separate two-layer 256-unit tanh
+actor/critic networks, Gaussian actions, a 6M-step budget, and Adam at 3e-4 with linear annealing.
+Device auto-selection is CUDA → Apple MPS → CPU. Try `--device cpu`: CPU is usually
+fastest for networks this small, though hardware and minibatch size affect results.
+
+Training starts on the `sweep` showcase. Every ten updates an independent eight-run
+stochastic evaluation checks the first lap. After at least 200k agent steps and ≥95%
+success, training switches to the full 200-track pool. This transition preserves
+the policy, optimizer, running statistics, and global step. A run that never passes
+this gate remains on the single track; reaching its step budget does not mean M3's
+learning criteria have been met.
+
+`train/ppo.py` implements the clipped surrogate, optional clipped value loss, GAE,
+minibatch advantage normalization, entropy bonus, and gradient norm clipping without
+an RL framework. Actions are sampled from a Gaussian with learned state-independent
+log standard deviation; likelihoods use the original samples and only the actions
+sent to the environment are clipped. GAE bootstraps truncations from `final_obs`,
+cuts recursion at every episode boundary, and never bootstraps a crash.
+
+Running mean/variance normalizes observations. Rewards are divided by the standard
+deviation of discounted returns, without subtracting a reward mean. Evaluation freezes
+statistics and reports original, unscaled episode rewards. TensorBoard and JSONL
+logs include episode returns/laps, best lap time, crash rate, reward terms, policy/value
+losses, entropy/log_std, KL, clip fraction, explained variance, throughput, observation
+ranges, and action clipping. The simulation remains float64; the networks use float32.
+
+Checkpoints are atomic writes under the run directory. `latest.pt` and numbered
+`checkpoints/` files contain model/Adam state, observation/return statistics, RNG states,
+live vector-environment state, versions, and configuration. Resume rejects changed
+geometry or simulation settings. Exact uninterrupted-vs-resumed training is tested
+on CPU and on CUDA when available. To increase a run's budget, add `--total-timesteps`;
+that extends the linear learning-rate horizon and is a deliberate continuation change.
+`--updates 3` stops after three additional updates and writes a resumable checkpoint.
+
+Scheduled policy snapshots are stored in `snapshots/` for steps 0, 50k, 200k, 1M, 3M,
+and `final`. They include both normalizers and are intentionally separate from resumable
+checkpoints. A threshold is captured at the first vector batch that reaches it (50k is
+captured at 50,048 with 64 cars); metadata records both requested and actual step counts.
+The policy stays fixed during a rollout, while its observation statistics continue to
+update. Full training stops at a rollout boundary and can slightly exceed the budget.
+
+## Evaluate policies
+
+```sh
+make eval
+make eval ARGS="--checkpoint artifacts/training/my-run/latest.pt --runs 5"
+make eval ARGS="--checkpoint artifacts/training/my-run/latest.pt --deterministic --runs 1"
+make eval ARGS="--checkpoint artifacts/training/my-run/latest.pt --snapshots --runs 5"
+```
+
+The M3 evaluator prints lap completion, crash rate, and mean/best lap time per snapshot
+for the three showcases and 50 held-out tracks, with per-track/per-episode JSON results
+in `artifacts/evaluation/`. `--runs` is the number of trials **per track**. Default trials
+sample the Gaussian policy; `--deterministic` uses its mean, as the eventual browser
+opponent will. Each trial starts from rest at the start line and stops at its first
+completed lap, crash, or the configured step limit. It never trains on held-out tracks
+or updates running statistics. A timeout counts as an unsuccessful lap; lap times only
+summarize successful trials. Replay/heatmap production and ONNX export remain M4 work.
+
+The measured reference runs started with the saved 3M-step baseline configurations
+and resumed to 6M after diagnosing insufficient training on the larger pool. To
+reproduce that exact schedule (rather than a fresh run with a 6M annealing horizon):
+
+```sh
+make train ARGS="--config experiments/m3-baseline-seed1.yaml --run-dir artifacts/training/reproduce-seed1"
+make train ARGS="--run-dir artifacts/training/reproduce-seed1 --resume artifacts/training/reproduce-seed1/latest.pt --total-timesteps 6000000"
+```
+
+Use `m3-baseline-seed2.yaml` and a separate directory for the second seed. See
+[experiments/m3-diagnosis.json](experiments/m3-diagnosis.json) for the signal checks
+and the one-setting budget change. The default budget was raised to 6M after this
+comparison; learning results remain something to measure, not assume from finite losses.
+
+The validated reference is `artifacts/training/m3-seed2/latest.pt` (6,012,928 steps):
+**98.7% showcase completion** over 150 stochastic trials and **85.2% held-out completion**
+over 250 trials, exceeding M3's 95% / 80% targets. Mean-action evaluation completes all
+three showcases and 43/50 held-out tracks. Measured rollout/update time was **9.81 min**
+on an RTX 3060 Ti; startup, pool generation and evaluation are excluded. Seed 1 also
+passes the stochastic targets but has a deterministic technical-track regression,
+so seed 2 is the reference for future browser work.
+
+See [experiments/M3_RESULTS.md](experiments/M3_RESULTS.md) for both seeds, per-track
+lap times, failure counts, experiment conditions, hashes, and raw results. To inspect
+the retained reference directly:
+
+```sh
+make eval ARGS="--checkpoint artifacts/training/m3-seed2/latest.pt --showcase-only --runs 50"
+make eval ARGS="--checkpoint artifacts/training/m3-seed2/latest.pt --runs 5"
+```
+
 ## Code and data
 
 | Location | Responsibility |
@@ -147,6 +248,9 @@ measurement; performance on a particular laptop still needs measuring.
 | `tools/debug_drive.py` | Keyboard controls and pygame rendering |
 | `tools/export_tracks.py` | Track-only JSON export |
 | `tools/benchmark.py` | Full-transition CPU throughput measurement |
+| `train/config.py`, `configs/ppo.yaml` | Typed PPO, normalization, curriculum and snapshot settings |
+| `train/ppo.py` | Single-file PPO, logging, checkpoint/resume and curriculum loop |
+| `eval/evaluate.py` | Frozen-policy lap-completion and timing evaluation |
 
 Simulation uses SI units, positive-left steering and a y-up world. Physics advances at
 1/60 s with semi-implicit Euler; controls update every two ticks. Rendering and wall
@@ -165,10 +269,9 @@ The future browser should load this geometry instead of regenerating it.
 
 ## Scope and open issues
 
-M3–M6 are intentionally unimplemented: PPO, evaluation, ONNX, TypeScript parity,
-and the browser game. M2 does not claim learning results.
-`train`, `eval`, `export`, `web-dev`, and `web-build` exist as required Make targets
-and exit with an explicit milestone message. M1 track export is `make tracks`.
+M4–M6 are intentionally unimplemented: replay/heatmap assets, ONNX, TypeScript parity,
+and the browser game. `export`, `web-dev`, and `web-build` exit with an explicit milestone
+message. M1 track export is `make tracks`.
 
 Automated checks establish the numeric driving targets and recoverable sliding;
 subjective keyboard feel still needs human playtesting. Rendering is deliberately

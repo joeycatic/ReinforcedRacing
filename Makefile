@@ -19,6 +19,12 @@ tracks:
 benchmark:
 	$(UV) run --locked python -m tools.benchmark $(ARGS)
 
-train eval export web-dev web-build:
-	@echo "$@ is outside M2; see spec.md milestones M3–M6." >&2
+train:
+	$(UV) run --locked python -m train.ppo $(ARGS)
+
+eval:
+	$(UV) run --locked python -m eval.evaluate $(ARGS)
+
+web-dev web-build export:
+	@echo "$@ is outside M3; see spec.md milestones M4–M6." >&2
 	@exit 2

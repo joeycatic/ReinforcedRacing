@@ -1,0 +1,794 @@
+{
+  "artifacts/training/m3-seed2/snapshots/0.pt": {
+    "global_step": 0,
+    "stage": "single",
+    "training_seconds": 0.0,
+    "checkpoint_sha256": "9e6e361db60a91c9e2f6aebf7688a4d262c145c0bb67d54123e07fd6bdef143e",
+    "training_seed": 2,
+    "config": {
+      "seed": 2,
+      "device": "cuda",
+      "cpu_threads": 1,
+      "deterministic": true,
+      "total_timesteps": 3000000,
+      "num_envs": 64,
+      "rollout_steps": 256,
+      "update_epochs": 10,
+      "num_minibatches": 4,
+      "hidden_size": 256,
+      "hidden_gain": 1.4142135623730951,
+      "actor_output_gain": 0.01,
+      "critic_output_gain": 1.0,
+      "initial_log_std": 0.0,
+      "gamma": 0.99,
+      "gae_lambda": 0.95,
+      "clip_coef": 0.2,
+      "clip_value_loss": true,
+      "value_clip_coef": 0.2,
+      "entropy_coef": 0.0,
+      "value_coef": 0.5,
+      "max_grad_norm": 0.5,
+      "learning_rate": 0.0003,
+      "anneal_lr": true,
+      "adam_eps": 1e-05,
+      "target_kl": null,
+      "normalize_advantage": true,
+      "observation_clip": 10.0,
+      "reward_clip": 10.0,
+      "normalization_epsilon": 1e-08,
+      "initial_stats_count": 0.0001,
+      "checkpoint_every_updates": 10,
+      "snapshot_steps": [
+        0,
+        50000,
+        200000,
+        1000000,
+        3000000
+      ],
+      "eval_every_updates": 10,
+      "curriculum_eval_runs": 8,
+      "curriculum_success_rate": 0.95,
+      "curriculum_min_steps": 200000,
+      "single_showcase": "sweep"
+    },
+    "versions": {
+      "physics": "physics.v1",
+      "obs": "obs.v1",
+      "track": "track.v1"
+    },
+    "showcase": {
+      "deterministic": false,
+      "seed": 42,
+      "runs_per_track": 1,
+      "summary": {
+        "episodes": 3,
+        "lap_completion_rate": 0.0,
+        "crash_rate": 1.0,
+        "mean_lap_time": null,
+        "best_lap_time": null,
+        "mean_progress": 45.7331137864364
+      },
+      "tracks": {
+        "sweep": {
+          "episodes": 1,
+          "lap_completion_rate": 0.0,
+          "crash_rate": 1.0,
+          "mean_lap_time": null,
+          "best_lap_time": null,
+          "mean_progress": 65.22160945596681
+        },
+        "ribbon": {
+          "episodes": 1,
+          "lap_completion_rate": 0.0,
+          "crash_rate": 1.0,
+          "mean_lap_time": null,
+          "best_lap_time": null,
+          "mean_progress": 20.980216321432692
+        },
+        "technical": {
+          "episodes": 1,
+          "lap_completion_rate": 0.0,
+          "crash_rate": 1.0,
+          "mean_lap_time": null,
+          "best_lap_time": null,
+          "mean_progress": 50.99751558190968
+        }
+      },
+      "episodes": [
+        {
+          "track_id": "sweep",
+          "track_seed": 17,
+          "run": 0,
+          "finished": false,
+          "crashed": true,
+          "lap_time": null,
+          "return": -5.680839054403296,
+          "progress": 65.22160945596681,
+          "agent_steps": 2203
+        },
+        {
+          "track_id": "ribbon",
+          "track_seed": 73,
+          "run": 0,
+          "finished": false,
+          "crashed": true,
+          "lap_time": null,
+          "return": -8.608978367856727,
+          "progress": 20.980216321432692,
+          "agent_steps": 707
+        },
+        {
+          "track_id": "technical",
+          "track_seed": 211,
+          "run": 0,
+          "finished": false,
+          "crashed": true,
+          "lap_time": null,
+          "return": -6.38324844180901,
+          "progress": 50.99751558190968,
+          "agent_steps": 1483
+        }
+      ]
+    }
+  },
+  "artifacts/training/m3-seed2/snapshots/50000.pt": {
+    "global_step": 50048,
+    "stage": "single",
+    "training_seconds": 4.6391261300304905,
+    "checkpoint_sha256": "999710c2ef12945335816eea03b60299715bb9371aeec6c77d2bcd99b8e07dae",
+    "training_seed": 2,
+    "config": {
+      "seed": 2,
+      "device": "cuda",
+      "cpu_threads": 1,
+      "deterministic": true,
+      "total_timesteps": 3000000,
+      "num_envs": 64,
+      "rollout_steps": 256,
+      "update_epochs": 10,
+      "num_minibatches": 4,
+      "hidden_size": 256,
+      "hidden_gain": 1.4142135623730951,
+      "actor_output_gain": 0.01,
+      "critic_output_gain": 1.0,
+      "initial_log_std": 0.0,
+      "gamma": 0.99,
+      "gae_lambda": 0.95,
+      "clip_coef": 0.2,
+      "clip_value_loss": true,
+      "value_clip_coef": 0.2,
+      "entropy_coef": 0.0,
+      "value_coef": 0.5,
+      "max_grad_norm": 0.5,
+      "learning_rate": 0.0003,
+      "anneal_lr": true,
+      "adam_eps": 1e-05,
+      "target_kl": null,
+      "normalize_advantage": true,
+      "observation_clip": 10.0,
+      "reward_clip": 10.0,
+      "normalization_epsilon": 1e-08,
+      "initial_stats_count": 0.0001,
+      "checkpoint_every_updates": 10,
+      "snapshot_steps": [
+        0,
+        50000,
+        200000,
+        1000000,
+        3000000
+      ],
+      "eval_every_updates": 10,
+      "curriculum_eval_runs": 8,
+      "curriculum_success_rate": 0.95,
+      "curriculum_min_steps": 200000,
+      "single_showcase": "sweep"
+    },
+    "versions": {
+      "physics": "physics.v1",
+      "obs": "obs.v1",
+      "track": "track.v1"
+    },
+    "showcase": {
+      "deterministic": false,
+      "seed": 42,
+      "runs_per_track": 1,
+      "summary": {
+        "episodes": 3,
+        "lap_completion_rate": 0.0,
+        "crash_rate": 1.0,
+        "mean_lap_time": null,
+        "best_lap_time": null,
+        "mean_progress": 60.20239295324825
+      },
+      "tracks": {
+        "sweep": {
+          "episodes": 1,
+          "lap_completion_rate": 0.0,
+          "crash_rate": 1.0,
+          "mean_lap_time": null,
+          "best_lap_time": null,
+          "mean_progress": 72.32702558007736
+        },
+        "ribbon": {
+          "episodes": 1,
+          "lap_completion_rate": 0.0,
+          "crash_rate": 1.0,
+          "mean_lap_time": null,
+          "best_lap_time": null,
+          "mean_progress": 32.45887201586578
+        },
+        "technical": {
+          "episodes": 1,
+          "lap_completion_rate": 0.0,
+          "crash_rate": 1.0,
+          "mean_lap_time": null,
+          "best_lap_time": null,
+          "mean_progress": 75.82128126380161
+        }
+      },
+      "episodes": [
+        {
+          "track_id": "sweep",
+          "track_seed": 17,
+          "run": 0,
+          "finished": false,
+          "crashed": true,
+          "lap_time": null,
+          "return": -5.5222974419922375,
+          "progress": 72.32702558007736,
+          "agent_steps": 2755
+        },
+        {
+          "track_id": "ribbon",
+          "track_seed": 73,
+          "run": 0,
+          "finished": false,
+          "crashed": true,
+          "lap_time": null,
+          "return": -7.843112798413416,
+          "progress": 32.45887201586578,
+          "agent_steps": 1089
+        },
+        {
+          "track_id": "technical",
+          "track_seed": 211,
+          "run": 0,
+          "finished": false,
+          "crashed": true,
+          "lap_time": null,
+          "return": -4.053871873619813,
+          "progress": 75.82128126380161,
+          "agent_steps": 1636
+        }
+      ]
+    }
+  },
+  "artifacts/training/m3-seed2/snapshots/200000.pt": {
+    "global_step": 200000,
+    "stage": "single",
+    "training_seconds": 18.074831575970165,
+    "checkpoint_sha256": "513a0e2acb38bef5346b66eabf9fbe7bc1d4e8b11c902a94306ad058b5ec0fca",
+    "training_seed": 2,
+    "config": {
+      "seed": 2,
+      "device": "cuda",
+      "cpu_threads": 1,
+      "deterministic": true,
+      "total_timesteps": 3000000,
+      "num_envs": 64,
+      "rollout_steps": 256,
+      "update_epochs": 10,
+      "num_minibatches": 4,
+      "hidden_size": 256,
+      "hidden_gain": 1.4142135623730951,
+      "actor_output_gain": 0.01,
+      "critic_output_gain": 1.0,
+      "initial_log_std": 0.0,
+      "gamma": 0.99,
+      "gae_lambda": 0.95,
+      "clip_coef": 0.2,
+      "clip_value_loss": true,
+      "value_clip_coef": 0.2,
+      "entropy_coef": 0.0,
+      "value_coef": 0.5,
+      "max_grad_norm": 0.5,
+      "learning_rate": 0.0003,
+      "anneal_lr": true,
+      "adam_eps": 1e-05,
+      "target_kl": null,
+      "normalize_advantage": true,
+      "observation_clip": 10.0,
+      "reward_clip": 10.0,
+      "normalization_epsilon": 1e-08,
+      "initial_stats_count": 0.0001,
+      "checkpoint_every_updates": 10,
+      "snapshot_steps": [
+        0,
+        50000,
+        200000,
+        1000000,
+        3000000
+      ],
+      "eval_every_updates": 10,
+      "curriculum_eval_runs": 8,
+      "curriculum_success_rate": 0.95,
+      "curriculum_min_steps": 200000,
+      "single_showcase": "sweep"
+    },
+    "versions": {
+      "physics": "physics.v1",
+      "obs": "obs.v1",
+      "track": "track.v1"
+    },
+    "showcase": {
+      "deterministic": false,
+      "seed": 42,
+      "runs_per_track": 1,
+      "summary": {
+        "episodes": 3,
+        "lap_completion_rate": 0.0,
+        "crash_rate": 1.0,
+        "mean_lap_time": null,
+        "best_lap_time": null,
+        "mean_progress": 205.9140386925657
+      },
+      "tracks": {
+        "sweep": {
+          "episodes": 1,
+          "lap_completion_rate": 0.0,
+          "crash_rate": 1.0,
+          "mean_lap_time": null,
+          "best_lap_time": null,
+          "mean_progress": 208.15277885400764
+        },
+        "ribbon": {
+          "episodes": 1,
+          "lap_completion_rate": 0.0,
+          "crash_rate": 1.0,
+          "mean_lap_time": null,
+          "best_lap_time": null,
+          "mean_progress": 258.99721099263473
+        },
+        "technical": {
+          "episodes": 1,
+          "lap_completion_rate": 0.0,
+          "crash_rate": 1.0,
+          "mean_lap_time": null,
+          "best_lap_time": null,
+          "mean_progress": 150.59212623105475
+        }
+      },
+      "episodes": [
+        {
+          "track_id": "sweep",
+          "track_seed": 17,
+          "run": 0,
+          "finished": false,
+          "crashed": true,
+          "lap_time": null,
+          "return": 10.510277885400743,
+          "progress": 208.15277885400764,
+          "agent_steps": 305
+        },
+        {
+          "track_id": "ribbon",
+          "track_seed": 73,
+          "run": 0,
+          "finished": false,
+          "crashed": true,
+          "lap_time": null,
+          "return": 15.573721099263496,
+          "progress": 258.99721099263473,
+          "agent_steps": 326
+        },
+        {
+          "track_id": "technical",
+          "track_seed": 211,
+          "run": 0,
+          "finished": false,
+          "crashed": true,
+          "lap_time": null,
+          "return": 4.8002126231054625,
+          "progress": 150.59212623105475,
+          "agent_steps": 259
+        }
+      ]
+    }
+  },
+  "artifacts/training/m3-seed2/snapshots/1000000.pt": {
+    "global_step": 1000000,
+    "stage": "single",
+    "training_seconds": 95.44422419395414,
+    "checkpoint_sha256": "936513b9f71c28e2ec161e77296b7ab98cba357f510dc114378b337acdf25b8b",
+    "training_seed": 2,
+    "config": {
+      "seed": 2,
+      "device": "cuda",
+      "cpu_threads": 1,
+      "deterministic": true,
+      "total_timesteps": 3000000,
+      "num_envs": 64,
+      "rollout_steps": 256,
+      "update_epochs": 10,
+      "num_minibatches": 4,
+      "hidden_size": 256,
+      "hidden_gain": 1.4142135623730951,
+      "actor_output_gain": 0.01,
+      "critic_output_gain": 1.0,
+      "initial_log_std": 0.0,
+      "gamma": 0.99,
+      "gae_lambda": 0.95,
+      "clip_coef": 0.2,
+      "clip_value_loss": true,
+      "value_clip_coef": 0.2,
+      "entropy_coef": 0.0,
+      "value_coef": 0.5,
+      "max_grad_norm": 0.5,
+      "learning_rate": 0.0003,
+      "anneal_lr": true,
+      "adam_eps": 1e-05,
+      "target_kl": null,
+      "normalize_advantage": true,
+      "observation_clip": 10.0,
+      "reward_clip": 10.0,
+      "normalization_epsilon": 1e-08,
+      "initial_stats_count": 0.0001,
+      "checkpoint_every_updates": 10,
+      "snapshot_steps": [
+        0,
+        50000,
+        200000,
+        1000000,
+        3000000
+      ],
+      "eval_every_updates": 10,
+      "curriculum_eval_runs": 8,
+      "curriculum_success_rate": 0.95,
+      "curriculum_min_steps": 200000,
+      "single_showcase": "sweep"
+    },
+    "versions": {
+      "physics": "physics.v1",
+      "obs": "obs.v1",
+      "track": "track.v1"
+    },
+    "showcase": {
+      "deterministic": false,
+      "seed": 42,
+      "runs_per_track": 1,
+      "summary": {
+        "episodes": 3,
+        "lap_completion_rate": 0.3333333333333333,
+        "crash_rate": 0.6666666666666666,
+        "mean_lap_time": 23.107182446771116,
+        "best_lap_time": 23.107182446771116,
+        "mean_progress": 536.3638991262332
+      },
+      "tracks": {
+        "sweep": {
+          "episodes": 1,
+          "lap_completion_rate": 0.0,
+          "crash_rate": 1.0,
+          "mean_lap_time": null,
+          "best_lap_time": null,
+          "mean_progress": 747.7731831214572
+        },
+        "ribbon": {
+          "episodes": 1,
+          "lap_completion_rate": 0.0,
+          "crash_rate": 1.0,
+          "mean_lap_time": null,
+          "best_lap_time": null,
+          "mean_progress": 304.25954463236286
+        },
+        "technical": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 23.107182446771116,
+          "best_lap_time": 23.107182446771116,
+          "mean_progress": 557.0589696248791
+        }
+      },
+      "episodes": [
+        {
+          "track_id": "sweep",
+          "track_seed": 17,
+          "run": 0,
+          "finished": false,
+          "crashed": true,
+          "lap_time": null,
+          "return": 64.0323183121456,
+          "progress": 747.7731831214572,
+          "agent_steps": 745
+        },
+        {
+          "track_id": "ribbon",
+          "track_seed": 73,
+          "run": 0,
+          "finished": false,
+          "crashed": true,
+          "lap_time": null,
+          "return": 20.098954463236314,
+          "progress": 304.25954463236286,
+          "agent_steps": 327
+        },
+        {
+          "track_id": "technical",
+          "track_seed": 211,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 23.107182446771116,
+          "return": 60.011896962487796,
+          "progress": 557.0589696248791,
+          "agent_steps": 694
+        }
+      ]
+    }
+  },
+  "artifacts/training/m3-seed2/snapshots/3000000.pt": {
+    "global_step": 3000000,
+    "stage": "pool",
+    "training_seconds": 297.1009731318918,
+    "checkpoint_sha256": "fa434de7146fb38009da073037ae7125754542ba278b838273b7e22597adb179",
+    "training_seed": 2,
+    "config": {
+      "seed": 2,
+      "device": "cuda",
+      "cpu_threads": 1,
+      "deterministic": true,
+      "total_timesteps": 3000000,
+      "num_envs": 64,
+      "rollout_steps": 256,
+      "update_epochs": 10,
+      "num_minibatches": 4,
+      "hidden_size": 256,
+      "hidden_gain": 1.4142135623730951,
+      "actor_output_gain": 0.01,
+      "critic_output_gain": 1.0,
+      "initial_log_std": 0.0,
+      "gamma": 0.99,
+      "gae_lambda": 0.95,
+      "clip_coef": 0.2,
+      "clip_value_loss": true,
+      "value_clip_coef": 0.2,
+      "entropy_coef": 0.0,
+      "value_coef": 0.5,
+      "max_grad_norm": 0.5,
+      "learning_rate": 0.0003,
+      "anneal_lr": true,
+      "adam_eps": 1e-05,
+      "target_kl": null,
+      "normalize_advantage": true,
+      "observation_clip": 10.0,
+      "reward_clip": 10.0,
+      "normalization_epsilon": 1e-08,
+      "initial_stats_count": 0.0001,
+      "checkpoint_every_updates": 10,
+      "snapshot_steps": [
+        0,
+        50000,
+        200000,
+        1000000,
+        3000000
+      ],
+      "eval_every_updates": 10,
+      "curriculum_eval_runs": 8,
+      "curriculum_success_rate": 0.95,
+      "curriculum_min_steps": 200000,
+      "single_showcase": "sweep"
+    },
+    "versions": {
+      "physics": "physics.v1",
+      "obs": "obs.v1",
+      "track": "track.v1"
+    },
+    "showcase": {
+      "deterministic": false,
+      "seed": 42,
+      "runs_per_track": 1,
+      "summary": {
+        "episodes": 3,
+        "lap_completion_rate": 1.0,
+        "crash_rate": 0.0,
+        "mean_lap_time": 24.285684058694056,
+        "best_lap_time": 21.20477034852065,
+        "mean_progress": 723.876591466108
+      },
+      "tracks": {
+        "sweep": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 26.03981653853052,
+          "best_lap_time": 26.03981653853052,
+          "mean_progress": 824.8377509821141
+        },
+        "ribbon": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 25.612465289030997,
+          "best_lap_time": 25.612465289030997,
+          "mean_progress": 789.6126052003981
+        },
+        "technical": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 21.20477034852065,
+          "best_lap_time": 21.20477034852065,
+          "mean_progress": 557.1794182158118
+        }
+      },
+      "episodes": [
+        {
+          "track_id": "sweep",
+          "track_seed": 17,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 26.03981653853052,
+          "return": 86.7017750982115,
+          "progress": 824.8377509821141,
+          "agent_steps": 782
+        },
+        {
+          "track_id": "ribbon",
+          "track_seed": 73,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 25.612465289030997,
+          "return": 83.19226052003984,
+          "progress": 789.6126052003981,
+          "agent_steps": 769
+        },
+        {
+          "track_id": "technical",
+          "track_seed": 211,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 21.20477034852065,
+          "return": 60.08094182158105,
+          "progress": 557.1794182158118,
+          "agent_steps": 637
+        }
+      ]
+    }
+  },
+  "artifacts/training/m3-seed2/snapshots/final.pt": {
+    "global_step": 6012928,
+    "stage": "pool",
+    "training_seconds": 588.3715881587414,
+    "checkpoint_sha256": "5f247575bc0003fc4abf0a6c41704562ba818e1f8b31f83ddc92ff53011426f3",
+    "training_seed": 2,
+    "config": {
+      "seed": 2,
+      "device": "cuda",
+      "cpu_threads": 1,
+      "deterministic": true,
+      "total_timesteps": 6000000,
+      "num_envs": 64,
+      "rollout_steps": 256,
+      "update_epochs": 10,
+      "num_minibatches": 4,
+      "hidden_size": 256,
+      "hidden_gain": 1.4142135623730951,
+      "actor_output_gain": 0.01,
+      "critic_output_gain": 1.0,
+      "initial_log_std": 0.0,
+      "gamma": 0.99,
+      "gae_lambda": 0.95,
+      "clip_coef": 0.2,
+      "clip_value_loss": true,
+      "value_clip_coef": 0.2,
+      "entropy_coef": 0.0,
+      "value_coef": 0.5,
+      "max_grad_norm": 0.5,
+      "learning_rate": 0.0003,
+      "anneal_lr": true,
+      "adam_eps": 1e-05,
+      "target_kl": null,
+      "normalize_advantage": true,
+      "observation_clip": 10.0,
+      "reward_clip": 10.0,
+      "normalization_epsilon": 1e-08,
+      "initial_stats_count": 0.0001,
+      "checkpoint_every_updates": 10,
+      "snapshot_steps": [
+        0,
+        50000,
+        200000,
+        1000000,
+        3000000
+      ],
+      "eval_every_updates": 10,
+      "curriculum_eval_runs": 8,
+      "curriculum_success_rate": 0.95,
+      "curriculum_min_steps": 200000,
+      "single_showcase": "sweep"
+    },
+    "versions": {
+      "physics": "physics.v1",
+      "obs": "obs.v1",
+      "track": "track.v1"
+    },
+    "showcase": {
+      "deterministic": false,
+      "seed": 42,
+      "runs_per_track": 1,
+      "summary": {
+        "episodes": 3,
+        "lap_completion_rate": 1.0,
+        "crash_rate": 0.0,
+        "mean_lap_time": 23.250800628193108,
+        "best_lap_time": 20.037530178222255,
+        "mean_progress": 723.9450263207904
+      },
+      "tracks": {
+        "sweep": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 24.671070936335152,
+          "best_lap_time": 24.671070936335152,
+          "mean_progress": 824.9642155521026
+        },
+        "ribbon": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 25.043800770021925,
+          "best_lap_time": 25.043800770021925,
+          "mean_progress": 789.6674479688019
+        },
+        "technical": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 20.037530178222255,
+          "best_lap_time": 20.037530178222255,
+          "mean_progress": 557.2034154414664
+        }
+      },
+      "episodes": [
+        {
+          "track_id": "sweep",
+          "track_seed": 17,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 24.671070936335152,
+          "return": 86.75542155521026,
+          "progress": 824.9642155521026,
+          "agent_steps": 741
+        },
+        {
+          "track_id": "ribbon",
+          "track_seed": 73,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 25.043800770021925,
+          "return": 83.21474479688013,
+          "progress": 789.6674479688019,
+          "agent_steps": 752
+        },
+        {
+          "track_id": "technical",
+          "track_seed": 211,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 20.037530178222255,
+          "return": 60.118341544146546,
+          "progress": 557.2034154414664,
+          "agent_steps": 602
+        }
+      ]
+    }
+  }
+}

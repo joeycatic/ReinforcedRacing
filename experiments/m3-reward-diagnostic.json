@@ -1,0 +1,12 @@
+{
+  "scripted_terms": {
+    "progress": 82.44925814704654,
+    "time": -2.087999999999881,
+    "crash": 0.0,
+    "lap": 5.0
+  },
+  "scripted_reward": 85.36125814704666,
+  "scripted_laps": 1,
+  "scripted_steps": 2088,
+  "stationary_reward_same_steps": -2.088
+}

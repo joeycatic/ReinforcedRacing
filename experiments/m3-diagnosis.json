@@ -1,0 +1,44 @@
+{
+  "symptom": "3M stochastic evaluation below M3 acceptance: 86.7% showcase, 76.4% held-out.",
+  "checks": {
+    "metrics": {
+      "policy/approx_kl": 3.068449586862698e-07,
+      "policy/clip_fraction": 0.0,
+      "critic/explained_variance": 0.9183495044708252,
+      "policy/entropy": 2.2963589668273925,
+      "policy/steer_log_std": -0.27243173122406006,
+      "rewards/progress": 0.09131948706619188,
+      "rewards/crash": -0.00244140625
+    },
+    "normalizer": "Updated every training step, frozen in eval; >5-sigma boundary-ray values correspond to valid long rays (heavy-tailed distances), all raw values bounded and finite. Pooled-statistic test passes.",
+    "rewards": {
+      "scripted_terms": {
+        "progress": 82.44925814704654,
+        "time": -2.087999999999881,
+        "crash": 0.0,
+        "lap": 5.0
+      },
+      "scripted_reward": 85.36125814704666,
+      "scripted_laps": 1,
+      "scripted_steps": 2088,
+      "stationary_reward_same_steps": -2.088
+    },
+    "actions": "Gaussian steer/throttle standard deviations about 0.76; no constant saturation or stalled policy. Likelihoods use unclipped samples.",
+    "boundaries": "Hand-computed GAE and rollout-level terminal-observation tests pass. Exact CPU/CUDA resume through autoresets passes.",
+    "easy_task": "8/8 stochastic sweep laps at step 1,310,720; first curriculum gate passed without tuning."
+  },
+  "root_cause": "No signal/algorithm defect found; baseline spends only ~1.7M steps on 200 tracks before the learning rate anneals to zero. Remaining failures occur in unseen/tighter geometry.",
+  "change": "Extend only total_timesteps from 3M to 6M, continuing the same checkpoint and normalizers; compare seed 1 and seed 2 with their 3M baselines.",
+  "evidence": {
+    "comparison": "m3-results.json",
+    "showcase_stochastic_50_runs": {
+      "seed1": 0.98,
+      "seed2": 0.9866666666666667
+    },
+    "held_out_stochastic_5_runs": {
+      "seed1": 0.932,
+      "seed2": 0.852
+    },
+    "mean_policy_reference": "seed 2 final: 3/3 showcase and 43/50 held-out laps. Seed 1 mean policy regressed on technical although its stochastic score passed; retain that failure in the reports and select the independently validated seed 2 checkpoint."
+  }
+}

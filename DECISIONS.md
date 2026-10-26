@@ -33,3 +33,21 @@
 - Reserve seeds 10000–10199 for the 200 training tracks and 20000–20049 for the 50 held-out tracks, disjoint from showcase seeds; construct pools explicitly once, with the three showcases as the quick default for environment constructors.
 - Benchmark full transitions with 64 cars and 64 generated training tracks, pre-generated held random controls, 100 warmup batches and three 1000-batch samples; exclude one-time geometry/grid setup and include crash autoreset, sensor construction, rewards and info.
 - Add Gymnasium as the only new dependency for M2, because its standard environment contract and checker are explicit milestone requirements; PPO remains unimplemented until M3.
+
+# M3 decisions
+
+- Implement PPO and the summary evaluator required by M3 acceptance; leave replay/heatmap generation, ONNX, TypeScript parity, and web assets for M4, without altering M1/M2 simulation behavior.
+- Use PyTorch solely for neural networks, distributions, automatic differentiation and Adam, and TensorBoard for logging; training imports no reinforcement-learning framework.
+- Keep network tensors float32 while physics and running-statistic accumulation remain float64; normalize observations in NumPy before converting to network tensors, and freeze statistics for evaluation.
+- Compute Gaussian likelihoods on unclipped samples, clipping only environment inputs; advantage normalization is per minibatch, and the critic/actor use separate two-hidden-layer networks.
+- Bootstrap a truncated transition from the critic's final-observation value, bootstrap no crash, and cut GAE recursion at both termination and truncation so rewards cannot leak across autoresets.
+- Scale rewards using the running variance of discounted returns, without mean subtraction; clear each discounted-return accumulator after its episode ends, preserving it across rollout/checkpoint boundaries.
+- Save scheduled snapshots at the first complete vector step at/after the requested count, recording actual and requested counts separately; policies update only at rollout boundaries and final training steps round up to a complete rollout.
+- Keep policy-only ghost snapshots distinct from full resumable checkpoints; both save observation and return statistics, while resumable checkpoints also save Adam, CPU/CUDA/MPS RNG state, shuffle RNG, live environment arrays, environment RNG, track-geometry hash and simulation configuration.
+- Resume at an update boundary and reject incompatible versions, geometry/order or settings; allow changing device/CPU threads or extending the total-step horizon, with exact same-device continuation regression tests.
+- Require ≥95% first-lap success over eight seeded stochastic runs and at least 200k steps before moving from `sweep` to the configured 200-track pool; keep policy, optimizer and normalizers across the curriculum transition, resetting only live episodes/discounted returns.
+- Define each M3 evaluation trial as one lap from rest (a one-lap truncation using the unchanged environment), with crashes/timeouts as failures; default to stochastic trials, offer deterministic policy-mean trials separately, and report success/crash rates plus times conditional on success.
+- Use a separate seeded NumPy evaluation RNG for policy noise so evaluation cannot alter training's PyTorch RNG stream; never update normalization statistics or optimizer state during evaluation.
+- Keep generated checkpoints/logs under ignored artifacts/ and commit source configs plus quantitative evaluation reports, rather than adding transient training output to Git.
+- After checking metrics, normalization outliers, scripted rewards, action distributions, GAE/reset handling, and the successful single-track curriculum, extend only the total-step budget from 3M to 6M and compare two seeds; preserve the original baseline configs and checkpoint evidence, and use 6M as the new default without changing the specified PPO hyperparameters.
+- Validate stochastic completion with 50 trials per showcase and five trials per held-out track, and evaluate deterministic means separately; select seed 2's final checkpoint as the reference because it passes both modes, explicitly retaining seed 1's late deterministic technical-track failure in the report.

@@ -1,0 +1,372 @@
+{
+  "3932160": {
+    "deterministic": true,
+    "seed": 42,
+    "runs_per_track": 1,
+    "summary": {
+      "episodes": 3,
+      "lap_completion_rate": 1.0,
+      "crash_rate": 0.0,
+      "mean_lap_time": 23.486072551955193,
+      "best_lap_time": 20.53466947991471,
+      "mean_progress": 724.013912951952
+    },
+    "tracks": {
+      "sweep": {
+        "episodes": 1,
+        "lap_completion_rate": 1.0,
+        "crash_rate": 0.0,
+        "mean_lap_time": 24.969773120575507,
+        "best_lap_time": 24.969773120575507,
+        "mean_progress": 824.927812296968
+      },
+      "ribbon": {
+        "episodes": 1,
+        "lap_completion_rate": 1.0,
+        "crash_rate": 0.0,
+        "mean_lap_time": 24.953775055375367,
+        "best_lap_time": 24.953775055375367,
+        "mean_progress": 789.8049880327519
+      },
+      "technical": {
+        "episodes": 1,
+        "lap_completion_rate": 1.0,
+        "crash_rate": 0.0,
+        "mean_lap_time": 20.53466947991471,
+        "best_lap_time": 20.53466947991471,
+        "mean_progress": 557.3089385261361
+      }
+    },
+    "episodes": [
+      {
+        "track_id": "sweep",
+        "track_seed": 17,
+        "run": 0,
+        "finished": true,
+        "crashed": false,
+        "lap_time": 24.969773120575507,
+        "return": 86.74278122969687,
+        "progress": 824.927812296968,
+        "agent_steps": 750
+      },
+      {
+        "track_id": "ribbon",
+        "track_seed": 73,
+        "run": 0,
+        "finished": true,
+        "crashed": false,
+        "lap_time": 24.953775055375367,
+        "return": 83.23149880327512,
+        "progress": 789.8049880327519,
+        "agent_steps": 749
+      },
+      {
+        "track_id": "technical",
+        "track_seed": 211,
+        "run": 0,
+        "finished": true,
+        "crashed": false,
+        "lap_time": 20.53466947991471,
+        "return": 60.1138938526135,
+        "progress": 557.3089385261361,
+        "agent_steps": 617
+      }
+    ]
+  },
+  "4423680": {
+    "deterministic": true,
+    "seed": 42,
+    "runs_per_track": 1,
+    "summary": {
+      "episodes": 3,
+      "lap_completion_rate": 1.0,
+      "crash_rate": 0.0,
+      "mean_lap_time": 23.294381216118314,
+      "best_lap_time": 20.416035652054898,
+      "mean_progress": 723.7933595882573
+    },
+    "tracks": {
+      "sweep": {
+        "episodes": 1,
+        "lap_completion_rate": 1.0,
+        "crash_rate": 0.0,
+        "mean_lap_time": 24.752997747768028,
+        "best_lap_time": 24.752997747768028,
+        "mean_progress": 824.9766233177384
+      },
+      "ribbon": {
+        "episodes": 1,
+        "lap_completion_rate": 1.0,
+        "crash_rate": 0.0,
+        "mean_lap_time": 24.714110248532023,
+        "best_lap_time": 24.714110248532023,
+        "mean_progress": 789.5636528444439
+      },
+      "technical": {
+        "episodes": 1,
+        "lap_completion_rate": 1.0,
+        "crash_rate": 0.0,
+        "mean_lap_time": 20.416035652054898,
+        "best_lap_time": 20.416035652054898,
+        "mean_progress": 556.8398026025899
+      }
+    },
+    "episodes": [
+      {
+        "track_id": "sweep",
+        "track_seed": 17,
+        "run": 0,
+        "finished": true,
+        "crashed": false,
+        "lap_time": 24.752997747768028,
+        "return": 86.75466233177391,
+        "progress": 824.9766233177384,
+        "agent_steps": 743
+      },
+      {
+        "track_id": "ribbon",
+        "track_seed": 73,
+        "run": 0,
+        "finished": true,
+        "crashed": false,
+        "lap_time": 24.714110248532023,
+        "return": 83.21436528444448,
+        "progress": 789.5636528444439,
+        "agent_steps": 742
+      },
+      {
+        "track_id": "technical",
+        "track_seed": 211,
+        "run": 0,
+        "finished": true,
+        "crashed": false,
+        "lap_time": 20.416035652054898,
+        "return": 60.07098026025883,
+        "progress": 556.8398026025899,
+        "agent_steps": 613
+      }
+    ]
+  },
+  "4915200": {
+    "deterministic": true,
+    "seed": 42,
+    "runs_per_track": 1,
+    "summary": {
+      "episodes": 3,
+      "lap_completion_rate": 1.0,
+      "crash_rate": 0.0,
+      "mean_lap_time": 23.033462235891886,
+      "best_lap_time": 20.030977390273485,
+      "mean_progress": 723.7948390639409
+    },
+    "tracks": {
+      "sweep": {
+        "episodes": 1,
+        "lap_completion_rate": 1.0,
+        "crash_rate": 0.0,
+        "mean_lap_time": 24.570023055746937,
+        "best_lap_time": 24.570023055746937,
+        "mean_progress": 824.9742366134404
+      },
+      "ribbon": {
+        "episodes": 1,
+        "lap_completion_rate": 1.0,
+        "crash_rate": 0.0,
+        "mean_lap_time": 24.49938626165522,
+        "best_lap_time": 24.49938626165522,
+        "mean_progress": 789.5156754379141
+      },
+      "technical": {
+        "episodes": 1,
+        "lap_completion_rate": 1.0,
+        "crash_rate": 0.0,
+        "mean_lap_time": 20.030977390273485,
+        "best_lap_time": 20.030977390273485,
+        "mean_progress": 556.8946051404685
+      }
+    },
+    "episodes": [
+      {
+        "track_id": "sweep",
+        "track_seed": 17,
+        "run": 0,
+        "finished": true,
+        "crashed": false,
+        "lap_time": 24.570023055746937,
+        "return": 86.75942366134406,
+        "progress": 824.9742366134404,
+        "agent_steps": 738
+      },
+      {
+        "track_id": "ribbon",
+        "track_seed": 73,
+        "run": 0,
+        "finished": true,
+        "crashed": false,
+        "lap_time": 24.49938626165522,
+        "return": 83.21656754379137,
+        "progress": 789.5156754379141,
+        "agent_steps": 735
+      },
+      {
+        "track_id": "technical",
+        "track_seed": 211,
+        "run": 0,
+        "finished": true,
+        "crashed": false,
+        "lap_time": 20.030977390273485,
+        "return": 60.088460514046766,
+        "progress": 556.8946051404685,
+        "agent_steps": 601
+      }
+    ]
+  },
+  "5406720": {
+    "deterministic": true,
+    "seed": 42,
+    "runs_per_track": 1,
+    "summary": {
+      "episodes": 3,
+      "lap_completion_rate": 1.0,
+      "crash_rate": 0.0,
+      "mean_lap_time": 22.74177122789327,
+      "best_lap_time": 19.8276799503048,
+      "mean_progress": 723.6700840982498
+    },
+    "tracks": {
+      "sweep": {
+        "episodes": 1,
+        "lap_completion_rate": 1.0,
+        "crash_rate": 0.0,
+        "mean_lap_time": 24.21651009052079,
+        "best_lap_time": 24.21651009052079,
+        "mean_progress": 824.4600752990655
+      },
+      "ribbon": {
+        "episodes": 1,
+        "lap_completion_rate": 1.0,
+        "crash_rate": 0.0,
+        "mean_lap_time": 24.18112364285422,
+        "best_lap_time": 24.18112364285422,
+        "mean_progress": 789.5534819618767
+      },
+      "technical": {
+        "episodes": 1,
+        "lap_completion_rate": 1.0,
+        "crash_rate": 0.0,
+        "mean_lap_time": 19.8276799503048,
+        "best_lap_time": 19.8276799503048,
+        "mean_progress": 556.9966950338073
+      }
+    },
+    "episodes": [
+      {
+        "track_id": "sweep",
+        "track_seed": 17,
+        "run": 0,
+        "finished": true,
+        "crashed": false,
+        "lap_time": 24.21651009052079,
+        "return": 86.71900752990656,
+        "progress": 824.4600752990655,
+        "agent_steps": 727
+      },
+      {
+        "track_id": "ribbon",
+        "track_seed": 73,
+        "run": 0,
+        "finished": true,
+        "crashed": false,
+        "lap_time": 24.18112364285422,
+        "return": 83.22934819618771,
+        "progress": 789.5534819618767,
+        "agent_steps": 726
+      },
+      {
+        "track_id": "technical",
+        "track_seed": 211,
+        "run": 0,
+        "finished": true,
+        "crashed": false,
+        "lap_time": 19.8276799503048,
+        "return": 60.104669503380656,
+        "progress": 556.9966950338073,
+        "agent_steps": 595
+      }
+    ]
+  },
+  "5898240": {
+    "deterministic": true,
+    "seed": 42,
+    "runs_per_track": 1,
+    "summary": {
+      "episodes": 3,
+      "lap_completion_rate": 0.6666666666666666,
+      "crash_rate": 0.3333333333333333,
+      "mean_lap_time": 24.236593358443216,
+      "best_lap_time": 24.21744780428266,
+      "mean_progress": 659.8852888437191
+    },
+    "tracks": {
+      "sweep": {
+        "episodes": 1,
+        "lap_completion_rate": 1.0,
+        "crash_rate": 0.0,
+        "mean_lap_time": 24.21744780428266,
+        "best_lap_time": 24.21744780428266,
+        "mean_progress": 825.1044257515413
+      },
+      "ribbon": {
+        "episodes": 1,
+        "lap_completion_rate": 1.0,
+        "crash_rate": 0.0,
+        "mean_lap_time": 24.25573891260377,
+        "best_lap_time": 24.25573891260377,
+        "mean_progress": 789.7671410020088
+      },
+      "technical": {
+        "episodes": 1,
+        "lap_completion_rate": 0.0,
+        "crash_rate": 1.0,
+        "mean_lap_time": null,
+        "best_lap_time": null,
+        "mean_progress": 364.7842997776072
+      }
+    },
+    "episodes": [
+      {
+        "track_id": "sweep",
+        "track_seed": 17,
+        "run": 0,
+        "finished": true,
+        "crashed": false,
+        "lap_time": 24.21744780428266,
+        "return": 86.78344257515415,
+        "progress": 825.1044257515413,
+        "agent_steps": 727
+      },
+      {
+        "track_id": "ribbon",
+        "track_seed": 73,
+        "run": 0,
+        "finished": true,
+        "crashed": false,
+        "lap_time": 24.25573891260377,
+        "return": 83.24871410020089,
+        "progress": 789.7671410020088,
+        "agent_steps": 728
+      },
+      {
+        "track_id": "technical",
+        "track_seed": 211,
+        "run": 0,
+        "finished": false,
+        "crashed": true,
+        "lap_time": null,
+        "return": 26.057429977760712,
+        "progress": 364.7842997776072,
+        "agent_steps": 421
+      }
+    ]
+  }
+}

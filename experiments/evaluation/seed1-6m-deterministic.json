@@ -1,0 +1,1101 @@
+{
+  "artifacts/training/m3-seed1/latest.pt": {
+    "global_step": 6012928,
+    "stage": "pool",
+    "training_seconds": 575.7361453896738,
+    "checkpoint_sha256": "28a4b5f5d952cfe1b0421d0d63dd1e2378df8417973c6f00f3959c1e2ef4de05",
+    "training_seed": 1,
+    "config": {
+      "seed": 1,
+      "device": "cuda",
+      "cpu_threads": 1,
+      "deterministic": true,
+      "total_timesteps": 6000000,
+      "num_envs": 64,
+      "rollout_steps": 256,
+      "update_epochs": 10,
+      "num_minibatches": 4,
+      "hidden_size": 256,
+      "hidden_gain": 1.4142135623730951,
+      "actor_output_gain": 0.01,
+      "critic_output_gain": 1.0,
+      "initial_log_std": 0.0,
+      "gamma": 0.99,
+      "gae_lambda": 0.95,
+      "clip_coef": 0.2,
+      "clip_value_loss": true,
+      "value_clip_coef": 0.2,
+      "entropy_coef": 0.0,
+      "value_coef": 0.5,
+      "max_grad_norm": 0.5,
+      "learning_rate": 0.0003,
+      "anneal_lr": true,
+      "adam_eps": 1e-05,
+      "target_kl": null,
+      "normalize_advantage": true,
+      "observation_clip": 10.0,
+      "reward_clip": 10.0,
+      "normalization_epsilon": 1e-08,
+      "initial_stats_count": 0.0001,
+      "checkpoint_every_updates": 10,
+      "snapshot_steps": [
+        0,
+        50000,
+        200000,
+        1000000,
+        3000000
+      ],
+      "eval_every_updates": 10,
+      "curriculum_eval_runs": 8,
+      "curriculum_success_rate": 0.95,
+      "curriculum_min_steps": 200000,
+      "single_showcase": "sweep"
+    },
+    "versions": {
+      "physics": "physics.v1",
+      "obs": "obs.v1",
+      "track": "track.v1"
+    },
+    "showcase": {
+      "deterministic": true,
+      "seed": 42,
+      "runs_per_track": 1,
+      "summary": {
+        "episodes": 3,
+        "lap_completion_rate": 0.6666666666666666,
+        "crash_rate": 0.3333333333333333,
+        "mean_lap_time": 24.36384361098701,
+        "best_lap_time": 24.241211400266437,
+        "mean_progress": 659.8038382389883
+      },
+      "tracks": {
+        "sweep": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 24.241211400266437,
+          "best_lap_time": 24.241211400266437,
+          "mean_progress": 824.809123105794
+        },
+        "ribbon": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 24.486475821707586,
+          "best_lap_time": 24.486475821707586,
+          "mean_progress": 789.8240740892528
+        },
+        "technical": {
+          "episodes": 1,
+          "lap_completion_rate": 0.0,
+          "crash_rate": 1.0,
+          "mean_lap_time": null,
+          "best_lap_time": null,
+          "mean_progress": 364.77831752191844
+        }
+      },
+      "episodes": [
+        {
+          "track_id": "sweep",
+          "track_seed": 17,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 24.241211400266437,
+          "return": 86.75291231057957,
+          "progress": 824.809123105794,
+          "agent_steps": 728
+        },
+        {
+          "track_id": "ribbon",
+          "track_seed": 73,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 24.486475821707586,
+          "return": 83.24740740892533,
+          "progress": 789.8240740892528,
+          "agent_steps": 735
+        },
+        {
+          "track_id": "technical",
+          "track_seed": 211,
+          "run": 0,
+          "finished": false,
+          "crashed": true,
+          "lap_time": null,
+          "return": 26.0578317521918,
+          "progress": 364.77831752191844,
+          "agent_steps": 420
+        }
+      ]
+    },
+    "held_out": {
+      "deterministic": true,
+      "seed": 42,
+      "runs_per_track": 1,
+      "summary": {
+        "episodes": 50,
+        "lap_completion_rate": 0.88,
+        "crash_rate": 0.1,
+        "mean_lap_time": 22.82962075328098,
+        "best_lap_time": 19.668406635106994,
+        "mean_progress": 636.3322801354659
+      },
+      "tracks": {
+        "seed-20000": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 25.256533744474204,
+          "best_lap_time": 25.256533744474204,
+          "mean_progress": 695.3119939048755
+        },
+        "seed-20001": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 21.585582722328592,
+          "best_lap_time": 21.585582722328592,
+          "mean_progress": 671.9424501481573
+        },
+        "seed-20002": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 21.242847363454235,
+          "best_lap_time": 21.242847363454235,
+          "mean_progress": 660.0799339373511
+        },
+        "seed-20003": {
+          "episodes": 1,
+          "lap_completion_rate": 0.0,
+          "crash_rate": 1.0,
+          "mean_lap_time": null,
+          "best_lap_time": null,
+          "mean_progress": 249.48296226264853
+        },
+        "seed-20004": {
+          "episodes": 1,
+          "lap_completion_rate": 0.0,
+          "crash_rate": 1.0,
+          "mean_lap_time": null,
+          "best_lap_time": null,
+          "mean_progress": 435.74620492185755
+        },
+        "seed-20005": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 22.93333333333335,
+          "best_lap_time": 22.93333333333335,
+          "mean_progress": 677.5521133953323
+        },
+        "seed-20006": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 22.886802248291392,
+          "best_lap_time": 22.886802248291392,
+          "mean_progress": 677.9704523169827
+        },
+        "seed-20007": {
+          "episodes": 1,
+          "lap_completion_rate": 0.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": null,
+          "best_lap_time": null,
+          "mean_progress": 477.4931621114763
+        },
+        "seed-20008": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 22.703705508953757,
+          "best_lap_time": 22.703705508953757,
+          "mean_progress": 691.9701838383397
+        },
+        "seed-20009": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 24.65296991862102,
+          "best_lap_time": 24.65296991862102,
+          "mean_progress": 690.3845588237948
+        },
+        "seed-20010": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 24.14507617857477,
+          "best_lap_time": 24.14507617857477,
+          "mean_progress": 684.3094163616161
+        },
+        "seed-20011": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 22.028496312991333,
+          "best_lap_time": 22.028496312991333,
+          "mean_progress": 639.1483065622524
+        },
+        "seed-20012": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 20.99648567792655,
+          "best_lap_time": 20.99648567792655,
+          "mean_progress": 629.0699664036625
+        },
+        "seed-20013": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 24.620487685548486,
+          "best_lap_time": 24.620487685548486,
+          "mean_progress": 673.5549622863424
+        },
+        "seed-20014": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 23.91309465842825,
+          "best_lap_time": 23.91309465842825,
+          "mean_progress": 710.8602855809086
+        },
+        "seed-20015": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 21.64422557493864,
+          "best_lap_time": 21.64422557493864,
+          "mean_progress": 645.1387282463675
+        },
+        "seed-20016": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 24.93293537452616,
+          "best_lap_time": 24.93293537452616,
+          "mean_progress": 693.863670305453
+        },
+        "seed-20017": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 21.955540275300436,
+          "best_lap_time": 21.955540275300436,
+          "mean_progress": 647.4959825359864
+        },
+        "seed-20018": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 21.911445783695346,
+          "best_lap_time": 21.911445783695346,
+          "mean_progress": 702.2893263681809
+        },
+        "seed-20019": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 21.835885067868446,
+          "best_lap_time": 21.835885067868446,
+          "mean_progress": 652.1817671296973
+        },
+        "seed-20020": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 22.775666153623252,
+          "best_lap_time": 22.775666153623252,
+          "mean_progress": 642.4222834254149
+        },
+        "seed-20021": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 21.19284213497213,
+          "best_lap_time": 21.19284213497213,
+          "mean_progress": 640.4220426859026
+        },
+        "seed-20022": {
+          "episodes": 1,
+          "lap_completion_rate": 0.0,
+          "crash_rate": 1.0,
+          "mean_lap_time": null,
+          "best_lap_time": null,
+          "mean_progress": 450.6785811813258
+        },
+        "seed-20023": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 22.706239306139125,
+          "best_lap_time": 22.706239306139125,
+          "mean_progress": 666.1501016532892
+        },
+        "seed-20024": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 23.02367916617922,
+          "best_lap_time": 23.02367916617922,
+          "mean_progress": 674.8926381585487
+        },
+        "seed-20025": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 21.3720693545569,
+          "best_lap_time": 21.3720693545569,
+          "mean_progress": 614.442522529759
+        },
+        "seed-20026": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 23.95917098108947,
+          "best_lap_time": 23.95917098108947,
+          "mean_progress": 672.124843535403
+        },
+        "seed-20027": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 25.136196194772417,
+          "best_lap_time": 25.136196194772417,
+          "mean_progress": 686.1594908543021
+        },
+        "seed-20028": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 22.78136983957647,
+          "best_lap_time": 22.78136983957647,
+          "mean_progress": 638.3098062678242
+        },
+        "seed-20029": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 22.739286944380655,
+          "best_lap_time": 22.739286944380655,
+          "mean_progress": 682.6595819253221
+        },
+        "seed-20030": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 23.056018235108173,
+          "best_lap_time": 23.056018235108173,
+          "mean_progress": 688.0010272690806
+        },
+        "seed-20031": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 22.217512156081767,
+          "best_lap_time": 22.217512156081767,
+          "mean_progress": 673.2699228559065
+        },
+        "seed-20032": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 22.514662867020753,
+          "best_lap_time": 22.514662867020753,
+          "mean_progress": 668.6860990702187
+        },
+        "seed-20033": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 22.420604876860004,
+          "best_lap_time": 22.420604876860004,
+          "mean_progress": 675.0664840409253
+        },
+        "seed-20034": {
+          "episodes": 1,
+          "lap_completion_rate": 0.0,
+          "crash_rate": 1.0,
+          "mean_lap_time": null,
+          "best_lap_time": null,
+          "mean_progress": 365.0509841454376
+        },
+        "seed-20035": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 22.123246150266375,
+          "best_lap_time": 22.123246150266375,
+          "mean_progress": 657.1177408649538
+        },
+        "seed-20036": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 27.323285794110017,
+          "best_lap_time": 27.323285794110017,
+          "mean_progress": 703.48889255069
+        },
+        "seed-20037": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 23.16797478655157,
+          "best_lap_time": 23.16797478655157,
+          "mean_progress": 703.7383739307171
+        },
+        "seed-20038": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 26.011197150236434,
+          "best_lap_time": 26.011197150236434,
+          "mean_progress": 675.3654935424154
+        },
+        "seed-20039": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 19.668406635106994,
+          "best_lap_time": 19.668406635106994,
+          "mean_progress": 650.2013246604632
+        },
+        "seed-20040": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 21.762157981352146,
+          "best_lap_time": 21.762157981352146,
+          "mean_progress": 657.7582894161741
+        },
+        "seed-20041": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 21.844424767099536,
+          "best_lap_time": 21.844424767099536,
+          "mean_progress": 617.9720499277752
+        },
+        "seed-20042": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 22.15539561897703,
+          "best_lap_time": 22.15539561897703,
+          "mean_progress": 659.8074746915696
+        },
+        "seed-20043": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 21.111587683314877,
+          "best_lap_time": 21.111587683314877,
+          "mean_progress": 627.958138855004
+        },
+        "seed-20044": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 22.64258973707517,
+          "best_lap_time": 22.64258973707517,
+          "mean_progress": 663.4538126687854
+        },
+        "seed-20045": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 22.86923049122693,
+          "best_lap_time": 22.86923049122693,
+          "mean_progress": 688.068994009256
+        },
+        "seed-20046": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 22.8950002110454,
+          "best_lap_time": 22.8950002110454,
+          "mean_progress": 643.9823135133021
+        },
+        "seed-20047": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 22.513356165506405,
+          "best_lap_time": 22.513356165506405,
+          "mean_progress": 669.4906674083359
+        },
+        "seed-20048": {
+          "episodes": 1,
+          "lap_completion_rate": 1.0,
+          "crash_rate": 0.0,
+          "mean_lap_time": 23.27469433287903,
+          "best_lap_time": 23.27469433287903,
+          "mean_progress": 684.6256822752837
+        },
+        "seed-20049": {
+          "episodes": 1,
+          "lap_completion_rate": 0.0,
+          "crash_rate": 1.0,
+          "mean_lap_time": null,
+          "best_lap_time": null,
+          "mean_progress": 469.40192141862786
+        }
+      },
+      "episodes": [
+        {
+          "track_id": "seed-20000",
+          "track_seed": 20000,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 25.256533744474204,
+          "return": 73.77319939048745,
+          "progress": 695.3119939048755,
+          "agent_steps": 758
+        },
+        {
+          "track_id": "seed-20001",
+          "track_seed": 20001,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 21.585582722328592,
+          "return": 71.54624501481563,
+          "progress": 671.9424501481573,
+          "agent_steps": 648
+        },
+        {
+          "track_id": "seed-20002",
+          "track_seed": 20002,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 21.242847363454235,
+          "return": 70.36999339373493,
+          "progress": 660.0799339373511,
+          "agent_steps": 638
+        },
+        {
+          "track_id": "seed-20003",
+          "track_seed": 20003,
+          "run": 0,
+          "finished": false,
+          "crashed": true,
+          "lap_time": null,
+          "return": 14.64229622626486,
+          "progress": 249.48296226264853,
+          "agent_steps": 306
+        },
+        {
+          "track_id": "seed-20004",
+          "track_seed": 20004,
+          "run": 0,
+          "finished": false,
+          "crashed": true,
+          "lap_time": null,
+          "return": 33.101620492185724,
+          "progress": 435.74620492185755,
+          "agent_steps": 473
+        },
+        {
+          "track_id": "seed-20005",
+          "track_seed": 20005,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 22.93333333333335,
+          "return": 72.0662113395331,
+          "progress": 677.5521133953323,
+          "agent_steps": 689
+        },
+        {
+          "track_id": "seed-20006",
+          "track_seed": 20006,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 22.886802248291392,
+          "return": 72.11004523169811,
+          "progress": 677.9704523169827,
+          "agent_steps": 687
+        },
+        {
+          "track_id": "seed-20007",
+          "track_seed": 20007,
+          "run": 0,
+          "finished": false,
+          "crashed": false,
+          "lap_time": null,
+          "return": 41.74931621114455,
+          "progress": 477.4931621114763,
+          "agent_steps": 6000
+        },
+        {
+          "track_id": "seed-20008",
+          "track_seed": 20008,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 22.703705508953757,
+          "return": 73.5150183838339,
+          "progress": 691.9701838383397,
+          "agent_steps": 682
+        },
+        {
+          "track_id": "seed-20009",
+          "track_seed": 20009,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 24.65296991862102,
+          "return": 73.29845588237929,
+          "progress": 690.3845588237948,
+          "agent_steps": 740
+        },
+        {
+          "track_id": "seed-20010",
+          "track_seed": 20010,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 24.14507617857477,
+          "return": 72.70594163616148,
+          "progress": 684.3094163616161,
+          "agent_steps": 725
+        },
+        {
+          "track_id": "seed-20011",
+          "track_seed": 20011,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 22.028496312991333,
+          "return": 68.25383065622512,
+          "progress": 639.1483065622524,
+          "agent_steps": 661
+        },
+        {
+          "track_id": "seed-20012",
+          "track_seed": 20012,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 20.99648567792655,
+          "return": 67.27699664036616,
+          "progress": 629.0699664036625,
+          "agent_steps": 630
+        },
+        {
+          "track_id": "seed-20013",
+          "track_seed": 20013,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 24.620487685548486,
+          "return": 71.61649622863413,
+          "progress": 673.5549622863424,
+          "agent_steps": 739
+        },
+        {
+          "track_id": "seed-20014",
+          "track_seed": 20014,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 23.91309465842825,
+          "return": 75.36802855809077,
+          "progress": 710.8602855809086,
+          "agent_steps": 718
+        },
+        {
+          "track_id": "seed-20015",
+          "track_seed": 20015,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 21.64422557493864,
+          "return": 68.8638728246366,
+          "progress": 645.1387282463675,
+          "agent_steps": 650
+        },
+        {
+          "track_id": "seed-20016",
+          "track_seed": 20016,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 24.93293537452616,
+          "return": 73.63836703054517,
+          "progress": 693.863670305453,
+          "agent_steps": 748
+        },
+        {
+          "track_id": "seed-20017",
+          "track_seed": 20017,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 21.955540275300436,
+          "return": 69.0905982535985,
+          "progress": 647.4959825359864,
+          "agent_steps": 659
+        },
+        {
+          "track_id": "seed-20018",
+          "track_seed": 20018,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 21.911445783695346,
+          "return": 74.57093263681806,
+          "progress": 702.2893263681809,
+          "agent_steps": 658
+        },
+        {
+          "track_id": "seed-20019",
+          "track_seed": 20019,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 21.835885067868446,
+          "return": 69.56217671296953,
+          "progress": 652.1817671296973,
+          "agent_steps": 656
+        },
+        {
+          "track_id": "seed-20020",
+          "track_seed": 20020,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 22.775666153623252,
+          "return": 68.55822834254144,
+          "progress": 642.4222834254149,
+          "agent_steps": 684
+        },
+        {
+          "track_id": "seed-20021",
+          "track_seed": 20021,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 21.19284213497213,
+          "return": 68.40620426859009,
+          "progress": 640.4220426859026,
+          "agent_steps": 636
+        },
+        {
+          "track_id": "seed-20022",
+          "track_seed": 20022,
+          "run": 0,
+          "finished": false,
+          "crashed": true,
+          "lap_time": null,
+          "return": 34.4888581181325,
+          "progress": 450.6785811813258,
+          "agent_steps": 579
+        },
+        {
+          "track_id": "seed-20023",
+          "track_seed": 20023,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 22.706239306139125,
+          "return": 70.93301016532881,
+          "progress": 666.1501016532892,
+          "agent_steps": 682
+        },
+        {
+          "track_id": "seed-20024",
+          "track_seed": 20024,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 23.02367916617922,
+          "return": 71.79826381585475,
+          "progress": 674.8926381585487,
+          "agent_steps": 691
+        },
+        {
+          "track_id": "seed-20025",
+          "track_seed": 20025,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 21.3720693545569,
+          "return": 65.80225225297582,
+          "progress": 614.442522529759,
+          "agent_steps": 642
+        },
+        {
+          "track_id": "seed-20026",
+          "track_seed": 20026,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 23.95917098108947,
+          "return": 71.49348435354018,
+          "progress": 672.124843535403,
+          "agent_steps": 719
+        },
+        {
+          "track_id": "seed-20027",
+          "track_seed": 20027,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 25.136196194772417,
+          "return": 72.86094908543012,
+          "progress": 686.1594908543021,
+          "agent_steps": 755
+        },
+        {
+          "track_id": "seed-20028",
+          "track_seed": 20028,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 22.78136983957647,
+          "return": 68.14698062678218,
+          "progress": 638.3098062678242,
+          "agent_steps": 684
+        },
+        {
+          "track_id": "seed-20029",
+          "track_seed": 20029,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 22.739286944380655,
+          "return": 72.58295819253216,
+          "progress": 682.6595819253221,
+          "agent_steps": 683
+        },
+        {
+          "track_id": "seed-20030",
+          "track_seed": 20030,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 23.056018235108173,
+          "return": 73.1081027269081,
+          "progress": 688.0010272690806,
+          "agent_steps": 692
+        },
+        {
+          "track_id": "seed-20031",
+          "track_seed": 20031,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 22.217512156081767,
+          "return": 71.65999228559059,
+          "progress": 673.2699228559065,
+          "agent_steps": 667
+        },
+        {
+          "track_id": "seed-20032",
+          "track_seed": 20032,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 22.514662867020753,
+          "return": 71.19260990702175,
+          "progress": 668.6860990702187,
+          "agent_steps": 676
+        },
+        {
+          "track_id": "seed-20033",
+          "track_seed": 20033,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 22.420604876860004,
+          "return": 71.83364840409244,
+          "progress": 675.0664840409253,
+          "agent_steps": 673
+        },
+        {
+          "track_id": "seed-20034",
+          "track_seed": 20034,
+          "run": 0,
+          "finished": false,
+          "crashed": true,
+          "lap_time": null,
+          "return": 26.125098414543757,
+          "progress": 365.0509841454376,
+          "agent_steps": 380
+        },
+        {
+          "track_id": "seed-20035",
+          "track_seed": 20035,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 22.123246150266375,
+          "return": 70.04777408649525,
+          "progress": 657.1177408649538,
+          "agent_steps": 664
+        },
+        {
+          "track_id": "seed-20036",
+          "track_seed": 20036,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 27.323285794110017,
+          "return": 74.5288892550689,
+          "progress": 703.48889255069,
+          "agent_steps": 820
+        },
+        {
+          "track_id": "seed-20037",
+          "track_seed": 20037,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 23.16797478655157,
+          "return": 74.67783739307158,
+          "progress": 703.7383739307171,
+          "agent_steps": 696
+        },
+        {
+          "track_id": "seed-20038",
+          "track_seed": 20038,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 26.011197150236434,
+          "return": 71.7555493542414,
+          "progress": 675.3654935424154,
+          "agent_steps": 781
+        },
+        {
+          "track_id": "seed-20039",
+          "track_seed": 20039,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 19.668406635106994,
+          "return": 69.4291324660463,
+          "progress": 650.2013246604632,
+          "agent_steps": 591
+        },
+        {
+          "track_id": "seed-20040",
+          "track_seed": 20040,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 21.762157981352146,
+          "return": 70.1228289416173,
+          "progress": 657.7582894161741,
+          "agent_steps": 653
+        },
+        {
+          "track_id": "seed-20041",
+          "track_seed": 20041,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 21.844424767099536,
+          "return": 66.14120499277743,
+          "progress": 617.9720499277752,
+          "agent_steps": 656
+        },
+        {
+          "track_id": "seed-20042",
+          "track_seed": 20042,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 22.15539561897703,
+          "return": 70.31574746915675,
+          "progress": 659.8074746915696,
+          "agent_steps": 665
+        },
+        {
+          "track_id": "seed-20043",
+          "track_seed": 20043,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 21.111587683314877,
+          "return": 67.16181388550035,
+          "progress": 627.958138855004,
+          "agent_steps": 634
+        },
+        {
+          "track_id": "seed-20044",
+          "track_seed": 20044,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 22.64258973707517,
+          "return": 70.6653812668784,
+          "progress": 663.4538126687854,
+          "agent_steps": 680
+        },
+        {
+          "track_id": "seed-20045",
+          "track_seed": 20045,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 22.86923049122693,
+          "return": 73.11989940092559,
+          "progress": 688.068994009256,
+          "agent_steps": 687
+        },
+        {
+          "track_id": "seed-20046",
+          "track_seed": 20046,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 22.8950002110454,
+          "return": 68.71123135133007,
+          "progress": 643.9823135133021,
+          "agent_steps": 687
+        },
+        {
+          "track_id": "seed-20047",
+          "track_seed": 20047,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 22.513356165506405,
+          "return": 71.27306674083344,
+          "progress": 669.4906674083359,
+          "agent_steps": 676
+        },
+        {
+          "track_id": "seed-20048",
+          "track_seed": 20048,
+          "run": 0,
+          "finished": true,
+          "crashed": false,
+          "lap_time": 23.27469433287903,
+          "return": 72.76356822752827,
+          "progress": 684.6256822752837,
+          "agent_steps": 699
+        },
+        {
+          "track_id": "seed-20049",
+          "track_seed": 20049,
+          "run": 0,
+          "finished": false,
+          "crashed": true,
+          "lap_time": null,
+          "return": 36.36919214186271,
+          "progress": 469.40192141862786,
+          "agent_steps": 571
+        }
+      ]
+    }
+  }
+}

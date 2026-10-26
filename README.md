@@ -1,6 +1,6 @@
 # Reinforced Racing
 
-[![CI](https://github.com/joeycatic/ReinforcedRacing/actions/workflows/ci.yml/badge.svg)](https://github.com/joeycatic/ReinforcedRacing/actions/workflows/ci.yml)
+[CI runs](https://github.com/joeycatic/ReinforcedRacing/actions/workflows/ci.yml)
 
 **A 2D racing game where you race a car that taught itself to drive, using PPO
 implemented from scratch.**
@@ -9,11 +9,15 @@ implemented from scratch.**
 
 No install, no backend. The AI opponent is a neural network that runs in your browser.
 
-![Six stages of training racing as ghosts, with driving-line and crash heatmaps](docs/images/m6-ghosts.png)
+![The intro page with a live Stadium circuit and measured results](docs/images/m7-intro.png)
+
+![Formula cars racing on a Stadium circuit](docs/images/m7-race.png)
 
 - **Race the AI.** Drive against a live policy network that runs ONNX inference
-  at 30 Hz in WebAssembly. Pick an opponent from any training stage, from
-  "can't find the throttle" to the final policy.
+  at 30 Hz in WebAssembly. Choose a showcase track and a medal opponent. Gold and Author (the final policy)
+  have verified lap times on every track; only checkpoints with a 3% gap qualify.
+- **Explore the engineering.** The intro explains PPO from scratch, compares both training
+  seeds, plots interactive learning curves and computes Python/browser physics parity live.
 - **Watch it learn.** Six snapshots from 0 to 6M steps start together as ghosts.
   Heatmaps show where each stage drives and where it crashes, aggregated over
   50 runs per stage.
@@ -133,3 +137,11 @@ logged in [DECISIONS.md](DECISIONS.md).
 ## License
 
 [MIT](LICENSE)
+
+## Site structure
+
+index.html is the intro with the live final-policy hero and exported evidence.
+race.html opens the track and medal cards; race.html#watch opens the existing ghost
+viewer directly. Both pages work under a repository subpath and request only local
+assets. The track editor is marked Coming soon; progressive playback and the editor
+remain M8 and M9. Racing requires a keyboard or gamepad.

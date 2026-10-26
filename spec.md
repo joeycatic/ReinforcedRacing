@@ -145,7 +145,7 @@ Single readable file in the spirit of CleanRL. Do not import any RL library in t
 Static Vite + TS + PixiJS app, 60 FPS fixed-timestep loop with an accumulator and render interpolation. Load all data from `manifest.json`.
 
 ### 8.1 Race mode (core)
-- Choose a showcase track and an opponent snapshot (e.g., "1M steps" or "final").
+- Choose a showcase track and a medal opponent from track/medal cards: Bronze, Silver, Gold, Author (final policy). Unavailable medals are omitted; cards show deterministic lap times.
 - Player drives with keyboard (arrows/WASD, space = brake/handbrake-light, R = respawn, Enter = restart). Gamepad support if trivial via the Gamepad API.
 - **Live AI opponent:** runs the TS physics with the ONNX policy in the browser (`onnxruntime-web`, inference every 2 physics steps, same as training). It is a real car, not a replay; cars do not collide with each other (Trackmania-style).
 - Optional ghost overlay of the AI's recorded best run.
@@ -164,7 +164,16 @@ Static Vite + TS + PixiJS app, 60 FPS fixed-timestep loop with an accumulator an
 Draw the 9 rays on the AI car, bars for current steer/throttle, and a meter for the value estimate.
 
 ### 8.5 Visual style
-Dark asphalt track with light curbs, a clean neon accent palette (player and AI in clearly distinct colors), tire marks when lateral slip exceeds a threshold, light particles on drift. It should look intentional and readable, not like a debug view. No external art assets required.
+M7 uses the daylight Stadium identity: striped grass, grey tarmac, red/white kerbs,
+blue checkpoint gates, and a checkered start. Code-drawn Formula cars have exposed tyres,
+front/rear wings, a shaded body, cockpit and nose number. Player mint (#3fe0b0),
+AI orange (#ff7a2f). A closer speed-eased camera and heavy italic white timing boxes
+frame the race; gate split deltas are blue ahead and red behind.
+
+The front page presents the live final policy, exported results, handwritten PPO,
+interactive learning curves, live Python/TypeScript parity and static deployment.
+The race and existing simultaneous ghost viewer live at race.html and race.html#watch.
+Section 8.2 is replaced by progressive playback only in M8.
 
 ## 9. Milestones and acceptance criteria
 
@@ -191,3 +200,136 @@ Web race mode (8.1) with live ONNX opponent.
 **M6 — Ghosts, heatmaps, polish**
 Time-lapse mode, heatmap overlay with snapshot slider, visual style, README (what it is, how to run, architecture diagram, results table, GIF placeholders with instructions on how to record them).
 ✅ `make web-build` produces a static site that can be deployed to GitHub Pages as-is.
+
+### M7: Stadium identity + intro page
+
+Amends spec §8.5 (visual style) and the §8.1 opponent picker.
+
+**Visual identity (owner's choices: Trackmania Stadium look, Formula car)**
+- Environment: daylight; striped grass; grey tarmac; red/white kerbs on both edges; blue
+  checkpoint gates across the road at each checkpoint; checkered start/finish.
+- Cars: open-wheel Formula cars, top-down, drawn in code with body shading, soft drop shadow,
+  front/rear wings, visible tyres, nose number. Player = mint (`#3fe0b0` family), AI = orange
+  (`#ff7a2f` family). Reference: `cars.html` option B in the brainstorm mockups.
+- HUD in Trackmania's language: heavy italic type in black boxes; checkpoint split shown at
+  top-centre with the delta in **blue when ahead, red when behind**; race time bottom-centre;
+  large speed readout bottom-right.
+- Camera sits closer than today so the car detail reads in play; zoom still eases with speed.
+  *(Builder's call within that: exact zoom levels.)*
+
+**Race setup (owner approved)**
+- Opponents are the training stages framed as Trackmania medals: **Bronze, Silver, Gold, Author**
+  (Author = final policy).
+- Today only two shipped snapshots (3M, final) can finish a lap, so the medals come from the
+  **existing training checkpoints** (owner's decision): evaluate the deterministic mean policy of
+  the 36 checkpoints in `artifacts/training/m3-seed2/checkpoints/` on each showcase track, pick
+  three that finish **all three** showcase tracks with clearly separated lap times
+  (Bronze slowest), and export ONNX for them through the existing export/validation path. No
+  retraining. The same three checkpoints are used on every track.
+- Fallback (owner's decision): if fewer than three checkpoints finish a given track, that track
+  shows fewer medals. Never show an opponent that cannot finish.
+- Medal cards show the medal's real lap time on that track, from the evaluation output.
+  Chosen checkpoint steps and the selection evidence go in DECISIONS.md.
+- Pre-race screen with track cards and medal-opponent cards replaces the sidebar of dropdowns.
+  The race itself is full-screen.
+
+**Intro page (owner approved the structure in `intro-page.html`)**
+- It is the site's front page. Race, Watch it learn and the editor are separate screens reached
+  from it.
+- Hero: headline "A car that taught itself to drive.", one sentence on what it is, three
+  buttons (Race the AI / Watch it learn / Draw a track). Background is the **real final policy
+  lapping a Stadium track live** (ONNX in the browser), not a video.
+- Stats strip: 98.7% showcase completion · 85.2% on 50 unseen tracks · 0 RL libraries ·
+  5e-13 physics parity error. Values read from committed result files, not hand-typed.
+- Engineer sections, in order:
+  1. **PPO from scratch**: loop diagram (64 cars → rollout → GAE → clipped update), interactive
+     learning curve (hover tooltips), the two-seed comparison including seed 1's regression,
+     links into `train/ppo.py`.
+  2. **Physics parity**: a Python-recorded trajectory and the live TypeScript simulation driven
+     by the same inputs, drawn overlapping; error figures; one line on why it matters ("without
+     this, the AI you race would drive worse than the one I trained").
+  3. **Built to ship**: CI status, test counts, versioned/hashed assets, static deploy.
+- Footer: owner's name, GitHub, LinkedIn. *(Owner to supply the name/LinkedIn URL; placeholder
+  until then.)*
+- Phones: full intro; buttons route to screens that work without a keyboard; Race shows the
+  existing keyboard/gamepad notice.
+
+**Acceptance**: every screen uses the Stadium look; no `<select>`-sidebar remains; intro renders
+correctly at phone width; race behaviour, lap times and parity results unchanged; `make test`
+and the e2e/static suites green.
+
+### M8: Progressive "Watch it learn"
+
+Replaces spec §8.2 (ghost time-lapse). §8.3 heatmaps stay, as an optional layer.
+
+**Experience (owner's choices: one car at a time, improving each attempt, ~1 minute total)**
+- About 10 attempts on one showcase track, played in training order, one car at a time.
+- Each completed attempt leaves a faded trail, coloured cool (early) → warm (final), so the
+  racing line visibly forms.
+- Pacing to fit ~60 s: crashes play at 1× (short anyway); stalls are cut after ~3 s and labelled
+  "stalled"; middle attempts fast-forward at 3×; the final clean lap gets the most time at 2× with
+  a live lap timer. *(Builder's call: exact per-attempt speeds, as long as total ≈ 60 s.)*
+- Bottom bar is **training progress**, one segment per attempt; play/pause, replay, skip to
+  final, click any segment to jump.
+- Captions are generated from data: attempt number, training steps, outcome ("crashed at
+  312 m", "stalled", "lap 24.25 s"). A few milestone attempts get a short headline ("Found the
+  throttle", "First full lap"), written only after inspecting what that checkpoint actually does.
+- Crash heatmap for the current attempt's stage: optional toggle, off by default.
+- Track picker for the three showcase tracks.
+
+**Data**
+- Attempts are deterministic mean-policy runs (as the current ghosts are) of selected
+  checkpoints. Available: snapshots 0 / 50K / 200K / 1M / 3M / final plus 36 checkpoints every
+  163,840 steps in `artifacts/training/m3-seed2/checkpoints/`.
+- Selection: ~10 checkpoints, denser early in training, each showing a visible behaviour change
+  on that track; selection may differ per track. *(Builder's call: the selection method; record
+  the chosen steps in DECISIONS.md.)*
+- Export adds replays for the selected checkpoints only. No ONNX models are needed for them,
+  so the bundle grows only by replay size. Asset manifest/versioning extended accordingly.
+
+**Acceptance**: a full playthrough on each showcase track takes 50–70 s; one moving car at a
+time; captions match the replay outcomes; the six-ghost simultaneous view is gone.
+
+### M9: Track editor
+
+New screen; adds a `track.v2` capability (crossings) to the simulation.
+
+**Experience (owner's choices: draw freehand, crossings become over/underpasses, Clear to
+start over, Submit when done, then the AI drives it, then you race it)**
+- One continuous freehand stroke with mouse or finger. The loop closes automatically when the
+  stroke ends near its start. The start line is the stroke's first point; driving direction is the
+  drawing direction.
+- The stroke is smoothed into a spline, resampled, and scaled to a track length in the range of
+  the training tracks. Road width is fixed inside the training range (10–14 m).
+- Crossings become overpasses: the later pass over a crossing is the bridge by default; clicking
+  a crossing flips it. Bridge drawn on top with a shadow. Crossings shallower than a minimum angle
+  are rejected (the roads would overlap too long). *(Builder's call: the exact minimum angle and
+  minimum spacing between crossings / from the start line.)*
+- Live validation while drawing:
+  - **Blocks Submit**: geometry that cannot exist (road folds inside a corner, boundaries
+    overlapping other than at a valid crossing, too short).
+  - **Warns but allows**: corners sharper than the training limit (`max_curvature` 0.10) are
+    painted red with a "too tight — the AI never trained on corners this sharp" note.
+- **Clear** wipes the drawing.
+- **Submit** → the final policy drives one lap with a follow camera and lap timer. Result: lap
+  time, or "crashed at N m" with the reason when known (e.g. the crash is inside a red section).
+- **Race it** → the normal race screen on the drawn track, AI lap as the target, splits vs AI.
+- **Share** (my addition, owner did not object): the track is encoded in the URL; opening the
+  link loads it. No server.
+
+**Simulation change: crossings**
+- Crash detection already uses a local-window centreline projection, so it stays on the correct
+  branch at a crossing.
+- Raycasts must not see the other branch's boundaries inside a crossing zone (otherwise the car
+  "sees" a wall across its road). Add per-crossing boundary-segment exclusion keyed on the car's
+  current branch.
+- Implemented in **both** Python (`sim/`) and TypeScript (`web/src/sim/`), with new golden
+  fixtures on a crossing track. Tracks without crossings must produce identical observations; all
+  existing fixtures must pass unchanged. This also means the editor's track builder is a
+  TypeScript port of `build_track` / `validity_errors`, parity-tested against Python on the same
+  control points.
+
+**Acceptance**: a drawn simple loop can be driven by the AI and raced; a figure-eight with one
+overpass is driven by the AI without phantom-wall crashes at the crossing; invalid drawings are
+blocked with a reason; too-tight corners warn; shared URLs reproduce the same track;
+Python/TS crossing parity fixtures pass; existing parity untouched.

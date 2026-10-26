@@ -359,3 +359,27 @@ Good clips: the countdown and a corner against the orange AI (`race.gif`), and
 The complete M1–M6 application is described in [the main README](../README.md).
 Physical gamepad/laptop checks and human keyboard playtesting remain outside the
 automated results.
+
+## M7: Stadium intro and medals
+
+Run `make web-dev`, open `/` for the intro, `/race.html` for the race, or
+`/race.html#watch` for simultaneous training replays. `make web-build` builds both HTML
+entry points, suitable for a static host without SPA route rewriting.
+
+`make medals` evaluates the 36 retained seed-2 checkpoints without retraining and writes
+`configs/medals.yaml` plus `experiments/medal-selection.json`. `make export` verifies
+selected checkpoint hashes, exports medal models/replays, builds source-backed site and
+parity data, and atomically replaces the committed manifest-v2 bundle. Retained logs for
+both seeds are needed for export, but no training artifacts are needed to run the site
+or normal CI. Only Gold and Author meet the per-track 3% separation requirement.
+
+Verification: `make test`, then `npm run --prefix web test:e2e`,
+`npm run --prefix web test:static`, and `make web-build`. The source-regeneration test
+skips in a fresh CI checkout without retained training logs; the committed data and
+asset hashes are still tested there. Browser captures are saved in `web/test-results/`.
+
+The hero pauses off screen and when the tab is hidden. Reduced motion shows a static
+circuit, and model/WASM failures leave the intro content and static preview usable.
+The parity demo compares the fixture's unrestricted physics path with the unchanged
+TypeScript kernel; crash/respawn and observation parity remain covered by the original
+600-tick fixtures.

@@ -133,3 +133,9 @@ Task 3 overlap; attempt type validation and replay access remain Task 3 work.
 - Caption training steps use replay `metadata.snapshot_step`, outcomes use replay `finished`/`crashed`, and metres/lap times use replay `progress`/`lap_time`. Preserve the existing `snapshotLabel` formatting (K below one million, M above), despite the brief's `0.33M` example; metadata values remain authoritative. The helper accepts a structural step/id input and remains re-exported from legacy playback until Task 5.
 - Timeline slots include their 1.5-second endpoint caption hold in `displaySeconds`. Jumps preserve play/pause state; replay starts playing from zero; play at the end stays stopped until replay or a jump. Compression applies one common multiplier with individual rates capped at 8×, solving monotonically to 60 seconds where attainable. Final/stalled rates stay fixed; totals below the 65-second threshold retain base pacing.
 - No visualConfig scope expansion: all pacing constants are owned only by the pure timeline; scene integration can consume its slots without repeating them.
+
+### M8 Task 4: scene integration
+
+- Retain `setGhosts`/`renderGhosts` until Task 5 removes race/controller callers, per the integration ruling; removing them in this task would break typecheck and existing Watch behavior. New attempts have an independent scene layer, hidden in legacy modes.
+- Move the timeline's hold/stall/rate constants into `visualConfig.watch` as required by scene integration (superseding Task 3's temporary ownership). Completed stalled trails use the same configured cut as playback; all paths stay open rather than closing back to the start.
+- Keep the Task 4 mount deliberately minimal: paused Sweep scene, Play/Pause and numbered attempt buttons. Full captions, navigation, track selection, crash map, reduced-motion/visibility lifecycle and removal of legacy ghost mode belong to Task 5.

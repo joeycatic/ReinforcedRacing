@@ -28,5 +28,13 @@ export const visualConfig = {
     markWidth: 0.25,
   },
   ghost: { minimumPixelsPerMeter: 3.2, labelSize: 11 },
+  watch: {
+    trailAlpha: 0.45,
+    trailWidth: 0.35,
+    trailEveryTicks: 6,
+    holdSeconds: 1.5,
+    stallSeconds: 3,
+    maxRate: 8,
+  },
   criticValueScale: 10,
 } as const;

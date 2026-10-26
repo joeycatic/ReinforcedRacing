@@ -1,3 +1,4 @@
+import { visualConfig } from "../viewer/visual-config";
 import type { Attempt, Replay } from "../assets/load";
 
 export function snapshotLabel(snapshot: { step: number; id?: string }): string {
@@ -44,7 +45,7 @@ export interface Slot {
   displaySeconds: number;
   start: number;
 }
-const HOLD = 1.5;
+const HOLD = visualConfig.watch.holdSeconds;
 /** Compress eligible attempts together, preserving stalls and the final lap. */
 export function planTimeline(runs: AttemptRun[]): Slot[] {
   if (!runs.length) throw new Error("Watch timeline requires at least one run");
@@ -66,7 +67,9 @@ export function planTimeline(runs: AttemptRun[]): Slot[] {
             ? 3
             : 1,
       replaySeconds:
-        run.attempt.outcome === "stalled" ? Math.min(3, seconds) : seconds,
+        run.attempt.outcome === "stalled"
+          ? Math.min(visualConfig.watch.stallSeconds, seconds)
+          : seconds,
       displaySeconds: 0,
       start: 0,
     };
@@ -80,13 +83,15 @@ export function planTimeline(runs: AttemptRun[]): Slot[] {
         sum +
         HOLD +
         slot.replaySeconds /
-          (eligible(slot.index) ? Math.min(8, slot.rate * factor) : slot.rate),
+          (eligible(slot.index)
+            ? Math.min(visualConfig.watch.maxRate, slot.rate * factor)
+            : slot.rate),
       0,
     );
   let factor = 1;
   if (total(1) > 65) {
     let low = 1,
-      high = 8;
+      high: number = visualConfig.watch.maxRate;
     for (let i = 0; i < 60; i++) {
       const middle = (low + high) / 2;
       if (total(middle) > 60) low = middle;
@@ -96,7 +101,8 @@ export function planTimeline(runs: AttemptRun[]): Slot[] {
   }
   let start = 0;
   for (const slot of slots) {
-    if (eligible(slot.index)) slot.rate = Math.min(8, slot.rate * factor);
+    if (eligible(slot.index))
+      slot.rate = Math.min(visualConfig.watch.maxRate, slot.rate * factor);
     slot.start = start;
     slot.displaySeconds = slot.replaySeconds / slot.rate + HOLD;
     start += slot.displaySeconds;

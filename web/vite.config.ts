@@ -50,6 +50,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         intro: fileURLToPath(new URL("./index.html", import.meta.url)),
+        watch: fileURLToPath(new URL("./watch.html", import.meta.url)),
         race: fileURLToPath(new URL("./race.html", import.meta.url)),
       },
     },

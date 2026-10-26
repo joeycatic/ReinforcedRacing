@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#5f9e3a" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <title>Reinforced Racing — Watch it learn</title>
+  </head>
+  <body>
+    <main>
+      <div class="circuit-bar">
+        <strong>WATCH IT LEARN</strong>
+        <span id="watch-state" role="status">LOADING</span>
+        <div class="race-actions">
+          <button id="watch-play" disabled>Play</button>
+        </div>
+      </div>
+      <div id="circuit" class="circuit" tabindex="0"></div>
+      <nav
+        id="watch-segments"
+        class="race-actions"
+        aria-label="Training progress"
+        style="display: flex; flex-wrap: wrap; padding: 12px; gap: 8px"
+      ></nav>
+    </main>
+    <script type="module" src="/src/watch/main.ts"></script>
+  </body>
+</html>

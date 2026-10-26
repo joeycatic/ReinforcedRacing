@@ -1,3 +1,4 @@
+import type { AttemptRun, WatchTimeline } from "../watch/timeline";
 import {
   Application,
   Container,
@@ -45,6 +46,12 @@ export class RaceScene {
   private terrain = new Container();
   private heatLayer = new Container();
   private heatTextures: Texture[] = [];
+  private attempts = new Container();
+  private attemptRuns: AttemptRun[] = [];
+  private attemptTrails: Graphics[] = [];
+  private attemptCars: Sprite[] = [];
+  private partialTrail = new Graphics();
+  private partialKey = "";
   private fleet = new Container();
   private fleetLeaders = new Graphics();
   private fleetCars: { car: Container; label: Text }[] = [];
@@ -127,6 +134,7 @@ export class RaceScene {
       this.particles,
       this.sensors,
       this.fleet,
+      this.attempts,
       this.ghost,
       this.ai,
       this.player,
@@ -280,6 +288,7 @@ export class RaceScene {
         this.dirty = true;
       }
     }
+    this.attempts.visible = false;
     this.player.visible = this.playerVisible;
     this.ai.visible = true;
     this.fleet.visible = false;
@@ -415,6 +424,115 @@ export class RaceScene {
       this.heatLayer.addChild(points);
     }
   }
+  /** Each path is open: never connect an attempt's final point to its start. */
+  private drawTrail(graphics: Graphics, index: number, tick: number): void {
+    graphics.clear();
+    const run = this.attemptRuns[index];
+    const end = Math.min(run.frames.length - 1, Math.max(0, tick));
+    const first = run.frames[0];
+    graphics.moveTo(first[0], -first[1]);
+    for (
+      let i = visualConfig.watch.trailEveryTicks;
+      i < end;
+      i += visualConfig.watch.trailEveryTicks
+    ) {
+      const frame = run.frames[i];
+      graphics.lineTo(frame[0], -frame[1]);
+    }
+    const frame = run.frames[Math.floor(end)];
+    graphics.lineTo(frame[0], -frame[1]).stroke({
+      width: visualConfig.watch.trailWidth,
+      color: snapshotColor(index, this.attemptRuns.length),
+      alpha: visualConfig.watch.trailAlpha,
+      join: "round",
+      cap: "round",
+    });
+  }
+  setAttempts(runs: AttemptRun[]): void {
+    this.attempts.removeChildren().forEach((child) => child.destroy());
+    this.attemptRuns = runs;
+    this.attemptCars = [];
+    this.partialTrail = new Graphics();
+    this.partialKey = "";
+    this.attemptTrails = runs.map((run, index) => {
+      const trail = new Graphics();
+      trail.label = `trail-${index}`;
+      const seconds = (run.frames.length - 1) * run.data.dt;
+      const cut =
+        run.attempt.outcome === "stalled"
+          ? Math.min(seconds, visualConfig.watch.stallSeconds)
+          : seconds;
+      this.drawTrail(trail, index, cut / run.data.dt);
+      trail.visible = false;
+      this.attempts.addChild(trail);
+      return trail;
+    });
+    this.attempts.addChild(this.partialTrail);
+    runs.forEach((_, index) => {
+      const color = snapshotColor(index, runs.length);
+      const car = formulaCar(
+        {
+          ...LIVERIES.ai,
+          body: color,
+          light: color,
+          number: String(index + 1),
+        },
+        this.app.renderer,
+      );
+      car.label = "attempt-car";
+      car.visible = false;
+      this.attemptCars.push(car);
+      this.attempts.addChild(car);
+    });
+    this.dirty = true;
+  }
+  renderAttempt(timeline: WatchTimeline): void {
+    if (!this.track) return;
+    this.player.visible =
+      this.ai.visible =
+      this.ghost.visible =
+      this.fleet.visible =
+        false;
+    this.attempts.visible = true;
+    this.particles.clear();
+    this.sensors.clear();
+    const current = timeline.current();
+    const earlier = new Set(timeline.trails());
+    this.attemptTrails.forEach((trail, i) => {
+      trail.visible = earlier.has(i);
+    });
+    this.partialTrail.label = `trail-${current.index}`;
+    const tick =
+      current.replaySeconds / this.attemptRuns[current.index].data.dt;
+    const key = `${current.index}:${tick}`;
+    if (key !== this.partialKey) {
+      this.drawTrail(this.partialTrail, current.index, tick);
+      this.partialKey = key;
+    }
+    const bounds = this.bounds(),
+      zoom = this.fitZoom();
+    this.world.pivot.set(bounds.x, bounds.y);
+    this.world.position.set(
+      this.host.clientWidth / 2,
+      this.host.clientHeight * 0.53,
+    );
+    this.world.scale.set(zoom);
+    this.camera = { x: bounds.x, y: bounds.y, zoom };
+    this.attemptCars.forEach((car, index) => {
+      car.visible = index === current.index && !current.holding;
+      if (!car.visible) return;
+      car.position.set(current.frame[0], -current.frame[1]);
+      car.rotation = -current.frame[2];
+      car.scale.set(
+        Math.max(1, visualConfig.ghost.minimumPixelsPerMeter / zoom) /
+          CAR_PIXELS_PER_METER,
+      );
+    });
+    this.app.render();
+    // Invalidate legacy view caches when switching back from Watch.
+    this.lastView = null;
+    this.dirty = false;
+  }
   setGhosts(runs: GhostRun[]): void {
     this.dirty = true;
     this.fleet.removeChildren().forEach((child) => child.destroy());
@@ -457,6 +575,7 @@ export class RaceScene {
     this.player.visible = false;
     this.ai.visible = false;
     this.ghost.visible = false;
+    this.attempts.visible = false;
     this.fleet.visible = true;
     this.particles.clear();
     this.sensors.clear();

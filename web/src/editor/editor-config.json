@@ -1,0 +1,19 @@
+{
+  "width": 12.0,
+  "length": 700.0,
+  "control_points": 24,
+  "samples_per_span": 40,
+  "sample_spacing": 1.0,
+  "checkpoint_spacing": 25.0,
+  "min_crossing_angle": 30.0,
+  "crossing_spacing": 80.0,
+  "crossing_start": 60.0,
+  "zone_margin": 2.0,
+  "max_curvature": 0.1,
+  "quantum": 0.1,
+  "ui": {
+    "closeDistancePx": 40,
+    "minStrokePx": 300,
+    "rebuildMs": 100
+  }
+}

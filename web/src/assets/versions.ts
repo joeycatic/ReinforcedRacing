@@ -13,3 +13,5 @@ export function requireVersions(versions: Record<string, string>): void {
       );
   }
 }
+
+export const TRACK_V2 = "track.v2";

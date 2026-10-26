@@ -23,6 +23,8 @@ class BoundaryGrid:
         origins, sizes, offsets = [], [], []
         starts, vectors = [np.zeros((1, 2))], [np.zeros((1, 2))]
         cells: list[list[int]] = []
+        tags = [np.zeros(1, dtype=np.int64)]
+        self.tag_count = 0
         segment_offset = 1  # Zero is an invalid/sentinel segment in empty grid slots.
         for track in tracks:
             start = np.vstack((track.left, track.right))
@@ -37,6 +39,12 @@ class BoundaryGrid:
                 for y in range(first[1], last[1] + 1):
                     for x in range(first[0], last[0] + 1):
                         cells[offset + y * size[0] + x].append(segment_offset + segment)
+            track_tags = np.zeros(len(start), dtype=np.int64)
+            for crossing in track.crossings:
+                for hidden in crossing.hidden:
+                    self.tag_count += 1
+                    track_tags[list(hidden)] = self.tag_count
+            tags.append(track_tags)
             starts.append(start)
             vectors.append(end - start)
             segment_offset += len(start)
@@ -46,6 +54,7 @@ class BoundaryGrid:
         self.origins = np.asarray(origins, dtype=np.float64)
         self.sizes = np.asarray(sizes, dtype=np.int64)
         self.offsets = np.asarray(offsets, dtype=np.int64)
+        self.tags = np.concatenate(tags)
         self.starts = np.concatenate(starts)
         self.vectors = np.concatenate(vectors)
         self.cells = np.zeros((len(cells), max(map(len, cells), default=1)), dtype=np.int64)
@@ -53,7 +62,12 @@ class BoundaryGrid:
             self.cells[index, : len(segments)] = segments
 
     def cast(
-        self, track_ids: IntArray, origins: FloatArray, directions: FloatArray, max_distance: float
+        self,
+        track_ids: IntArray,
+        origins: FloatArray,
+        directions: FloatArray,
+        max_distance: float,
+        hidden: NDArray[np.bool_] | None = None,
     ) -> FloatArray:
         """Origins (N,2), unit directions (N,R,2) -> nearest distances (N,R).
 
@@ -120,6 +134,8 @@ class BoundaryGrid:
                 & (distance >= start[rays, None] - EPS)
                 & (distance <= cell_end[:, None] + EPS)
             )
+            if hidden is not None:
+                valid &= ~hidden[(rays // ray_count)[:, None], self.tags[segments]]
             nearest = np.min(np.where(valid, np.maximum(distance, 0.0), np.inf), axis=1)
             hit = np.isfinite(nearest)
             result[rays[hit]] = np.minimum(nearest[hit], max_distance)

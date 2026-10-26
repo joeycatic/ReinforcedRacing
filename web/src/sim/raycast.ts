@@ -9,6 +9,7 @@ export class BoundaryGrid {
   readonly size: Vec2;
   readonly cells: number[][];
   readonly starts: Vec2[] = [];
+  readonly tags: number[] = [];
   readonly vectors: Vec2[] = [];
   constructor(
     track: Track,
@@ -16,6 +17,13 @@ export class BoundaryGrid {
   ) {
     if (!Number.isFinite(cellSize) || cellSize <= 0)
       throw new Error("Invalid grid cell size");
+    const count = track.data.centerline.length;
+    this.tags = Array(2 * count).fill(0);
+    (track.data.crossings ?? []).forEach((c, i) =>
+      c.hidden.forEach((ids, b) =>
+        ids.forEach((id) => (this.tags[id] = 1 + 2 * i + b)),
+      ),
+    );
     const boundaries = [track.data.left, track.data.right],
       points = boundaries.flat();
     const min: Vec2 = [
@@ -53,7 +61,12 @@ export class BoundaryGrid {
             this.cells[y * this.size[0] + x].push(segment);
       }
   }
-  cast(origin: Vec2, unitDirection: Vec2, maxDistance: number): number {
+  cast(
+    origin: Vec2,
+    unitDirection: Vec2,
+    maxDistance: number,
+    hidden?: ReadonlySet<number>,
+  ): number {
     const parallel = unitDirection.map((v) => Math.abs(v) < EPS);
     const direction = unitDirection.map((v, k) => (parallel[k] ? 0 : v));
     const safe = direction.map((v, k) => (parallel[k] ? 1 : v));
@@ -103,6 +116,7 @@ export class BoundaryGrid {
       const cellEnd = Math.min(...crossing, end);
       let nearest = Infinity;
       for (const segment of this.cells[cell[1] * this.size[0] + cell[0]]) {
+        if (hidden?.has(segment)) continue;
         const vector = this.vectors[segment],
           a = this.starts[segment];
         const rx = a[0] - origin[0],

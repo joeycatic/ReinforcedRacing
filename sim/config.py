@@ -225,3 +225,30 @@ def load_pool_config(path: Path = ROOT / "configs/tracks.yaml") -> PoolConfig:
         ):
             raise ValueError("Showcase seeds must be separate from generated pools")
     return config
+
+
+@dataclass(frozen=True)
+class EditorConfig:
+    width: float
+    length: float
+    control_points: int
+    samples_per_span: int
+    sample_spacing: float
+    checkpoint_spacing: float
+    min_crossing_angle: float
+    crossing_spacing: float
+    crossing_start: float
+    zone_margin: float
+    max_curvature: float
+    quantum: float
+
+    def __post_init__(self) -> None:
+        _positive_fields(self)
+        if self.control_points < 4 or self.samples_per_span < 4:
+            raise ValueError("Editor requires at least four controls and samples per span")
+        if self.min_crossing_angle > 90:
+            raise ValueError("Crossing angle must be <= 90")
+
+
+def load_editor(path: Path = ROOT / "configs/editor.yaml") -> EditorConfig:
+    return EditorConfig(**_read_yaml(path))

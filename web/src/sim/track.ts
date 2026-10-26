@@ -1,5 +1,7 @@
+import { findCrossings } from "./crossings";
+import editorConfig from "../editor/editor-config.json";
 import type { TrackData, Vec2 } from "./types";
-import { VERSIONS } from "../assets/versions";
+import { VERSIONS, TRACK_V2 } from "../assets/versions";
 import { clamp } from "./physics";
 
 // Python's positive modulo, without an extra rounding-prone addition for positive inputs.
@@ -24,7 +26,7 @@ export function searchSorted(
 export class Track {
   readonly length: number;
   constructor(readonly data: TrackData) {
-    if (data.version !== VERSIONS.track)
+    if (data.version !== VERSIONS.track && data.version !== TRACK_V2)
       throw new Error(`Unsupported track version: ${data.version}`);
     const n = data.centerline.length;
     if (
@@ -83,6 +85,44 @@ export class Track {
       )
         throw new Error("Inconsistent segment length");
     }
+    if (data.version === TRACK_V2) {
+      if (
+        data.id !== "custom" ||
+        !Array.isArray(data.crossings) ||
+        !data.crossings.length
+      )
+        throw new Error("track.v2 requires custom track crossings");
+      const expected = findCrossings(
+        data,
+        editorConfig,
+        data.crossings.map((c) => c.over),
+      );
+      if (expected.length !== data.crossings.length)
+        throw new Error("Inconsistent crossings");
+      expected.forEach((c, i) => {
+        const supplied = data.crossings![i];
+        if (
+          Object.keys(supplied).sort().join() !==
+            Object.keys(c).sort().join() ||
+          !Array.isArray(supplied.arcs) ||
+          supplied.arcs.length !== 2 ||
+          !Array.isArray(supplied.point) ||
+          supplied.point.length !== 2 ||
+          [...c.arcs, ...c.point, c.angle].some(
+            (v, k) =>
+              !Number.isFinite(
+                [...supplied.arcs, ...supplied.point, supplied.angle][k],
+              ) ||
+              Math.abs(
+                v - [...supplied.arcs, ...supplied.point, supplied.angle][k],
+              ) > 1e-9,
+          ) ||
+          JSON.stringify(c.hidden) !== JSON.stringify(supplied.hidden)
+        )
+          throw new Error("Inconsistent crossing geometry");
+      });
+    } else if (data.crossings !== undefined)
+      throw new Error("track.v1 cannot contain crossings");
   }
   sample(arc: number): [Vec2, number] {
     const s = modulo(arc, this.length),

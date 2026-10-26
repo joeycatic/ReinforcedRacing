@@ -389,3 +389,24 @@ def test_attempt_snapshot_selection_guard(
     snapshot = {"id": "final", "checkpoint_sha256": "a" * 64, "step": 123, field: value}
     with pytest.raises(ValueError, match="snapshot changed since selection"):
         assets.export_attempts(tmp_path / "assets", {"snapshots": [snapshot]}, load_export())
+
+
+def test_generated_editor_fixtures_are_current() -> None:
+    from tools.generate_parity import editor_fixtures
+
+    for name, fixture in editor_fixtures().items():
+        assert_fixture_close(
+            json.loads((ROOT / "tests/fixtures/editor" / name).read_text()),
+            json.loads(json.dumps(fixture)),
+            name,
+        )
+
+
+def test_generated_crossing_fixture_is_current() -> None:
+    from tools.generate_parity import crossing_fixture
+
+    assert_fixture_close(
+        json.loads((ROOT / "tests/fixtures/crossing/figure8.json").read_text()),
+        json.loads(json.dumps(crossing_fixture())),
+        "figure8",
+    )

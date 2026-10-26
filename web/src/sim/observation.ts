@@ -1,3 +1,4 @@
+import { hiddenSegments } from "./crossings";
 import type { Action, CarState, ObservationConfig } from "./types";
 import { Track, type Projection } from "./track";
 import { BoundaryGrid } from "./raycast";
@@ -22,12 +23,16 @@ export class ObservationBuilder {
   }
   build(s: CarState, p: Projection, previousAction: Action): number[] {
     const c = this.config;
+    const hidden = this.track.data.crossings?.length
+      ? hiddenSegments(this.track, p.arc)
+      : undefined;
     const rays = this.rayAngles.map(
       (angle) =>
         this.grid.cast(
           [s.x, s.y],
           [Math.cos(s.psi + angle), Math.sin(s.psi + angle)],
           c.ray_max_distance,
+          hidden,
         ) / c.ray_max_distance,
     );
     const tangent = this.track.data.tangents[p.index],

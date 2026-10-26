@@ -8,12 +8,15 @@ import numpy as np
 
 from eval.artifacts import simulation_config, write_json
 from export.assets import VERSIONS
-from sim.config import ROOT, load_observation, load_physics, load_tracks
+from sim.config import ROOT, load_editor, load_observation, load_physics, load_tracks
+from sim.editor import build_editor_track, editor_issues, tight_sections
 from sim.observation import ObservationBuilder
 from sim.physics import Action, CarState, step
 from sim.pool import TrackPool, make_track_pool
 from sim.progress import ProgressTracker
 from sim.session import DriveSession
+from sim.track import Track
+from tools.editor_shapes import shapes
 
 
 def progress_values(progress: ProgressTracker) -> dict:
@@ -43,10 +46,12 @@ def observe(
     )[0].tolist()
 
 
-def fixtures() -> dict[str, dict]:
+def fixtures(source_tracks: tuple[Track, ...] | None = None) -> dict[str, dict]:
     physics, tracks = load_physics(), load_tracks()[0]
     result = {}
-    for number, track in enumerate(make_track_pool("showcase").tracks):
+    for number, track in enumerate(
+        make_track_pool("showcase").tracks if source_tracks is None else source_tracks
+    ):
         pool = TrackPool([track])
         builder = ObservationBuilder(pool, load_observation())
         rng = np.random.default_rng(track.seed)
@@ -137,6 +142,56 @@ def fixtures() -> dict[str, dict]:
     return result
 
 
+def editor_fixtures() -> dict[str, dict]:
+    config = load_editor()
+    result = {}
+    for name, (control, _) in shapes().items():
+        track = build_editor_track(control, config)
+        result[f"{name}.json"] = {
+            "control": control.tolist(),
+            "over": None,
+            "config": asdict(config),
+            "track": track.to_dict(),
+            "issues": editor_issues(track, config),
+            "tight": tight_sections(track, config.max_curvature),
+        }
+    return result
+
+
+def crossing_fixture() -> dict:
+    track = build_editor_track(shapes()["figure8"][0], load_editor())
+    fixture = fixtures((track,))["custom.json"]
+    builder = ObservationBuilder(TrackPool([track]), load_observation())
+    probes = []
+    for arc in track.crossings[0].arcs:
+        for i, offset in enumerate(np.linspace(-40, 40, 20)):
+            sample_arc = float(arc + offset)
+            position, heading = track.sample(sample_arc)
+            state = CarState(*position, heading + (0.3 if i % 2 else -0.3), 20, 0, 0, 0)
+            index = int(np.searchsorted(track.arc_length, sample_arc, side="right")) - 1
+            action = [0.15, 1.0]
+            observation = builder.build(
+                np.array([list(asdict(state).values())]),
+                np.array([0]),
+                np.array([index]),
+                np.array([sample_arc]),
+                np.zeros(1),
+                np.array([action]),
+            )[0]
+            probes.append(
+                {
+                    "state": asdict(state),
+                    "arc": sample_arc,
+                    "index": index,
+                    "offset": 0.0,
+                    "previous_action": action,
+                    "observation": observation.tolist(),
+                }
+            )
+    fixture["crossing_probes"] = probes
+    return fixture
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=ROOT / "tests/fixtures/parity")
@@ -144,6 +199,9 @@ def main() -> None:
     for name, fixture in fixtures().items():
         write_json(args.output / name, fixture)
         print(args.output / name)
+    for name, fixture in editor_fixtures().items():
+        write_json(args.output.parent / "editor" / name, fixture)
+    write_json(args.output.parent / "crossing/figure8.json", crossing_fixture())
 
 
 if __name__ == "__main__":

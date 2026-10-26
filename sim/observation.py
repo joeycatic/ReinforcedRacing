@@ -39,7 +39,13 @@ class ObservationBuilder:
         angles = psi[:, None] + self.ray_angles
         directions = np.stack((np.cos(angles), np.sin(angles)), axis=-1)
         observations[:, :9] = (
-            self.pool.grid.cast(track_ids, states[:, :2], directions, c.ray_max_distance)
+            self.pool.grid.cast(
+                track_ids,
+                states[:, :2],
+                directions,
+                c.ray_max_distance,
+                self.pool.hidden_tags(track_ids, arcs),
+            )
             / c.ray_max_distance
         )
         observations[:, 9] = states[:, 3] / c.longitudinal_speed_scale

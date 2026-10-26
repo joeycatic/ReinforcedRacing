@@ -66,7 +66,15 @@ export interface CarState {
   r: number;
   steering: number;
 }
+export interface CrossingData {
+  arcs: [number, number];
+  point: Vec2;
+  angle: number;
+  over: number;
+  hidden: [number[], number[]];
+}
 export interface TrackData {
+  crossings?: CrossingData[];
   version: string;
   id: string;
   name: string;

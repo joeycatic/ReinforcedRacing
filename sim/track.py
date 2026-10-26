@@ -8,9 +8,18 @@ from typing import Any
 
 import numpy as np
 
-from sim import TRACK_VERSION
+from sim import TRACK_V2, TRACK_VERSION
 from sim.config import PhysicsConfig, ShowcaseConfig, TrackConfig
 from sim.geometry import FloatArray, catmull_rom, cross, polylines_intersect, resample_closed
+
+
+@dataclass(frozen=True)
+class Crossing:
+    arcs: tuple[float, float]
+    point: tuple[float, float]
+    angle: float
+    over: int
+    hidden: tuple[tuple[int, ...], tuple[int, ...]]
 
 
 @dataclass(frozen=True)
@@ -26,6 +35,8 @@ class Track:
     left: FloatArray
     right: FloatArray
     checkpoints: FloatArray  # Arc lengths, starting with start/finish at zero.
+
+    crossings: tuple[Crossing, ...] = ()
 
     @property
     def length(self) -> float:
@@ -43,8 +54,8 @@ class Track:
         return self.centerline[index] + fraction * direction, atan2(direction[1], direction[0])
 
     def to_dict(self) -> dict[str, Any]:
-        return {
-            "version": TRACK_VERSION,
+        result = {
+            "version": TRACK_V2 if self.crossings else TRACK_VERSION,
             "id": self.id,
             "name": self.name,
             "seed": self.seed,
@@ -58,6 +69,19 @@ class Track:
             "checkpoints": self.checkpoints.tolist(),
         }
 
+        if self.crossings:
+            result["crossings"] = [
+                {
+                    "arcs": list(c.arcs),
+                    "point": list(c.point),
+                    "angle": c.angle,
+                    "over": c.over,
+                    "hidden": [list(ids) for ids in c.hidden],
+                }
+                for c in self.crossings
+            ]
+        return result
+
     def save(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(self.to_dict(), allow_nan=False, separators=(",", ":")) + "\n")
@@ -68,7 +92,7 @@ class Track:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Track":
-        if data.get("version") != TRACK_VERSION:
+        if data.get("version") not in (TRACK_VERSION, TRACK_V2):
             raise ValueError(f"Unsupported track version: {data.get('version')}")
         if not isinstance(data.get("seed"), int) or not isinstance(data.get("id"), str):
             raise ValueError("Track requires an integer seed and string id")
@@ -92,7 +116,40 @@ class Track:
                 raise ValueError(f"Inconsistent track geometry: {key}")
             # Preserve the exact exported numbers, rather than rounded/recomputed geometry.
             object.__setattr__(track, key, supplied)
-        errors = validity_errors(track)
+        if data["version"] == TRACK_V2:
+            from sim.config import load_editor
+            from sim.crossings import find_crossings
+            from sim.editor import editor_issues
+
+            if (
+                track.id != "custom"
+                or not isinstance(data.get("crossings"), list)
+                or not data["crossings"]
+            ):
+                raise ValueError("track.v2 requires custom track crossings")
+            config = load_editor()
+            try:
+                crossings = find_crossings(track, config, [c["over"] for c in data["crossings"]])
+                object.__setattr__(track, "crossings", crossings)
+                expected_crossings = track.to_dict()["crossings"]
+                if len(expected_crossings) != len(data["crossings"]):
+                    raise ValueError("Inconsistent crossings")
+                for supplied, expected in zip(data["crossings"], expected_crossings, strict=True):
+                    if set(supplied) != set(expected):
+                        raise ValueError("Inconsistent crossing fields")
+                    for key in ("arcs", "point", "angle"):
+                        a, b = np.asarray(supplied[key]), np.asarray(expected[key])
+                        if a.shape != b.shape or not np.allclose(a, b, atol=1e-9, rtol=0):
+                            raise ValueError("Inconsistent crossing geometry")
+                    if supplied["hidden"] != expected["hidden"]:
+                        raise ValueError("Inconsistent crossing hidden segments")
+            except (KeyError, TypeError, IndexError) as error:
+                raise ValueError("Invalid crossing data") from error
+            errors = editor_issues(track, config)
+        else:
+            if "crossings" in data:
+                raise ValueError("track.v1 cannot contain crossings")
+            errors = validity_errors(track)
         if errors:
             raise ValueError("Invalid track: " + "; ".join(errors))
         return track

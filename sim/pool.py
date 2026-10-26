@@ -52,6 +52,21 @@ class TrackPool:
         resolved_cell_size = load_observation().grid_cell_size if cell_size is None else cell_size
         self.grid = BoundaryGrid(tracks, resolved_cell_size)
 
+    def hidden_tags(self, track_ids: IntArray, arcs: FloatArray) -> np.ndarray | None:
+        if not self.grid.tag_count:
+            return None
+        from sim.crossings import branch
+
+        hidden = np.zeros((len(track_ids), self.grid.tag_count + 1), dtype=np.bool_)
+        tag = 1
+        for index, track in enumerate(self.tracks):
+            cars = np.flatnonzero(track_ids == index)
+            for crossing in track.crossings:
+                for car in cars:
+                    hidden[car, tag + 1 - branch(crossing, float(arcs[car]), track.length)] = True
+                tag += 2
+        return hidden
+
     def curvature_at(self, track_ids: IntArray, arcs: FloatArray) -> FloatArray:
         """Linear interpolation across nodes, including the closing segment."""
         wrapped = arcs % self.lengths[track_ids, None]

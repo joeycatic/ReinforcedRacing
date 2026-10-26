@@ -3,3 +3,5 @@
 PHYSICS_VERSION = "physics.v1"
 TRACK_VERSION = "track.v1"
 OBS_VERSION = "obs.v1"
+
+TRACK_V2 = "track.v2"

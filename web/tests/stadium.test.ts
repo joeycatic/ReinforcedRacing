@@ -35,3 +35,36 @@ it("eases camera zoom down to its minimum", () => {
   for (let v = 0; v < 100; v++)
     expect(cameraZoom(v + 1)).toBeLessThanOrEqual(cameraZoom(v));
 });
+
+import figure8 from "../../tests/fixtures/editor/figure8.json";
+import { Track } from "../src/sim/track";
+import type { TrackData } from "../src/sim/types";
+import { carAboveBridges } from "../src/race/stadium";
+it("places only cars on the selected overpass above bridges", () => {
+  const track = new Track(structuredClone(figure8.track) as TrackData);
+  const crossing = track.data.crossings![0];
+  expect(crossing.over).toBe(1);
+  const half =
+    track.data.width / Math.sin((crossing.angle * Math.PI) / 180) + 2;
+  expect(carAboveBridges(track, crossing.arcs[1] + half - 0.01)).toBe(true);
+  expect(carAboveBridges(track, crossing.arcs[1] + half + 0.01)).toBe(false);
+  expect(carAboveBridges(track, crossing.arcs[1])).toBe(true);
+  expect(carAboveBridges(track, crossing.arcs[0])).toBe(false);
+  expect(carAboveBridges(track, crossing.arcs[1] + 100)).toBe(false);
+  expect(carAboveBridges(track, crossing.arcs[1] + track.length)).toBe(true);
+  crossing.over = 0;
+  expect(carAboveBridges(track, crossing.arcs[0])).toBe(true);
+  expect(carAboveBridges(track, crossing.arcs[1])).toBe(false);
+});
+it("keeps open bridge kerbs open and ordinary tracks below bridges", () => {
+  const edge: [number, number][] = [
+    [0, 0],
+    [3, 0],
+    [6, 0],
+  ];
+  expect(kerbStripes(edge, 3, false)).toHaveLength(2);
+  const data = structuredClone(figure8.track) as TrackData;
+  data.version = "track.v1";
+  delete data.crossings;
+  expect(carAboveBridges(new Track(data), 0)).toBe(false);
+});

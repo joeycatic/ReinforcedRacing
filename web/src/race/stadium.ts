@@ -1,13 +1,18 @@
+import type { Track } from "../sim/track";
+import { circularDistance } from "../sim/crossings";
+import editorConfig from "../editor/editor-config.json";
 import type { Vec2 } from "../sim/types";
 import { visualConfig } from "../viewer/visual-config";
 
 export function kerbStripes(
   edge: Vec2[],
   stripe: number,
+  closed = true,
 ): { points: Vec2[]; red: boolean }[] {
   if (stripe <= 0) throw new Error("Stripe length must be positive");
   if (edge.length < 2) return [];
   const points =
+    closed &&
     edge.length > 2 &&
     (edge[0][0] !== edge.at(-1)![0] || edge[0][1] !== edge.at(-1)![1])
       ? [...edge, edge[0]]
@@ -50,4 +55,13 @@ export function gateOrdinals(checkpointCount: number, every: number): number[] {
 export function cameraZoom(speed: number): number {
   const z = visualConfig.stadium.zoom;
   return Math.max(z.minimum, z.rest / (1 + Math.max(0, speed) / z.speedScale));
+}
+
+export function carAboveBridges(track: Track, arc: number): boolean {
+  return (track.data.crossings ?? []).some(
+    (crossing) =>
+      circularDistance(arc, crossing.arcs[crossing.over], track.length) <=
+      track.data.width / Math.sin((crossing.angle * Math.PI) / 180) +
+        editorConfig.zone_margin,
+  );
 }

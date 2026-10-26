@@ -1,7 +1,13 @@
+import editorConfig from "../editor/editor-config.json";
 import type { AttemptRun, WatchTimeline } from "../watch/timeline";
 import { Application, Container, Graphics, Sprite, Texture } from "pixi.js";
 import type { CarState, Vec2 } from "../sim/types";
-import { cameraZoom, kerbStripes, gateOrdinals } from "./stadium";
+import {
+  cameraZoom,
+  kerbStripes,
+  gateOrdinals,
+  carAboveBridges,
+} from "./stadium";
 import { speed } from "../sim/physics";
 import { Track } from "../sim/track";
 import { interpolate, type RaceEngine } from "./engine";
@@ -32,6 +38,9 @@ export class RaceScene {
   private ai!: Sprite;
   private ghost!: Sprite;
   private terrain = new Container();
+  private cars = new Container();
+  private bridges: Container | null = null;
+  private topCars = new Container();
   private heatLayer = new Container();
   private heatTextures: Texture[] = [];
   private attempts = new Container();
@@ -118,14 +127,77 @@ export class RaceScene {
       this.particles,
       this.sensors,
       this.attempts,
-      this.ghost,
-      this.ai,
-      this.player,
+      this.cars,
+      this.topCars,
     );
+    this.cars.addChild(this.ghost, this.ai, this.player);
     this.observer.observe(this.host);
   }
   setTrack(track: Track): void {
     this.track = track;
+    this.bridges?.destroy({ children: true });
+    this.bridges = null;
+    if (track.data.crossings?.length) {
+      this.bridges = new Container();
+      this.world.addChildAt(
+        this.bridges,
+        this.world.getChildIndex(this.topCars),
+      );
+      for (const crossing of track.data.crossings) {
+        const half =
+          track.data.width / Math.sin((crossing.angle * Math.PI) / 180) +
+          editorConfig.zone_margin;
+        const start = crossing.arcs[crossing.over] - half;
+        const count = Math.ceil(2 * half);
+        const center: Vec2[] = [],
+          left: Vec2[] = [],
+          right: Vec2[] = [];
+        for (let i = 0; i <= count; i++) {
+          const [point, heading] = track.sample(start + (2 * half * i) / count);
+          center.push(point);
+          const nx = (-Math.sin(heading) * track.data.width) / 2;
+          const ny = (Math.cos(heading) * track.data.width) / 2;
+          left.push([point[0] + nx, point[1] + ny]);
+          right.push([point[0] - nx, point[1] - ny]);
+        }
+        const bridge = new Graphics();
+        const stroke = (
+          points: Vec2[],
+          color: number,
+          width: number,
+          alpha = 1,
+          offset = 0,
+        ): void => {
+          bridge.moveTo(points[0][0] + offset, -points[0][1] + offset);
+          for (const point of points.slice(1))
+            bridge.lineTo(point[0] + offset, -point[1] + offset);
+          bridge.stroke({ color, width, alpha });
+        };
+        stroke(
+          center,
+          0x000000,
+          track.data.width + visualConfig.stadium.kerbWidth,
+          0.35,
+          1.5,
+        );
+        stroke(center, visualConfig.stadium.tarmac, track.data.width);
+        for (const edge of [left, right]) {
+          // Bridge kerbs end at the deck edges rather than closing into a loop.
+          const stripes = kerbStripes(
+            edge,
+            visualConfig.stadium.kerbStripe,
+            false,
+          );
+          for (const stripe of stripes)
+            stroke(
+              stripe.points,
+              visualConfig.stadium.kerb[stripe.red ? 0 : 1],
+              visualConfig.stadium.kerbWidth,
+            );
+        }
+        this.bridges.addChild(bridge);
+      }
+    }
     this.terrain.cacheAsTexture(false);
     this.terrain.removeChildren().forEach((child) => child.destroy());
     this.clearMarks();
@@ -286,6 +358,15 @@ export class RaceScene {
     ] as const) {
       sprite.position.set(state.x, -state.y);
       sprite.rotation = -state.psi;
+    }
+    for (const [sprite, arc] of [
+      [this.player, engine.player.progress.projection.arc],
+      [this.ai, engine.ai.progress.projection.arc],
+    ] as const) {
+      const layer = carAboveBridges(this.track!, arc)
+        ? this.topCars
+        : this.cars;
+      if (sprite.parent !== layer) layer.addChild(sprite);
     }
     this.ghost.visible = ghostFrame !== null;
     if (ghostFrame) {

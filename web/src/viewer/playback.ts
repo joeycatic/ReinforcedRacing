@@ -1,3 +1,5 @@
+import { replayFrame } from "../watch/timeline";
+export { replayFrame, snapshotLabel } from "../watch/timeline";
 import type { Replay, Snapshot } from "../assets/load";
 
 export interface GhostRun {
@@ -9,16 +11,6 @@ export interface GhostPose {
   run: GhostRun;
   frame: number[];
   status: "ready" | "running" | "finished" | "crashed" | "timeout";
-}
-export function snapshotLabel(snapshot: Snapshot): string {
-  const step = snapshot.step;
-  const label =
-    step >= 1e6
-      ? `${Number((step / 1e6).toFixed(2))}M`
-      : step >= 1000
-        ? `${Number((step / 1000).toFixed(1))}K`
-        : String(step);
-  return snapshot.id === "final" ? `${label} FINAL` : label;
 }
 /** Continuous cool-to-warm colors, also shared by the on-track labels and legend. */
 export function snapshotColor(index: number, count: number): number {
@@ -37,25 +29,6 @@ export function snapshotColor(index: number, count: number): number {
       ) <<
         shift),
     0,
-  );
-}
-export function replayFrame(run: GhostRun, seconds: number): number[] {
-  const tick = Math.max(
-      0,
-      Math.min(run.frames.length - 1, seconds / run.data.dt),
-    ),
-    index = Math.floor(tick),
-    next = Math.min(index + 1, run.frames.length - 1),
-    fraction = tick - index;
-  return run.frames[index].map((value, column) =>
-    column === 2
-      ? value +
-        Math.atan2(
-          Math.sin(run.frames[next][column] - value),
-          Math.cos(run.frames[next][column] - value),
-        ) *
-          fraction
-      : value + (run.frames[next][column] - value) * fraction,
   );
 }
 export class GhostPlayback {

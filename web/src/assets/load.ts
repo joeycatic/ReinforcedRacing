@@ -14,6 +14,15 @@ export interface Asset {
   sha256: string;
   bytes: number;
 }
+export interface Attempt {
+  step: number;
+  source: string;
+  headline: string | null;
+  outcome: "finished" | "crashed" | "stalled";
+  progress: number;
+  lap_time: number | null;
+  replay: Asset;
+}
 export interface Snapshot {
   id: string;
   step: number;
@@ -67,6 +76,7 @@ export interface Manifest {
   parity_demo: Asset;
   tracks: (Asset & { id: string; name: string })[];
   snapshots: Snapshot[];
+  attempts: Record<string, Attempt[]>;
 }
 export interface SimulationConfig {
   versions: Record<string, string>;
@@ -146,6 +156,32 @@ export function validateManifest(data: Manifest): Manifest {
     for (const track of tracks) {
       validateAsset(snapshot.replays[track]);
       validateAsset(snapshot.heatmaps[track]);
+    }
+  }
+  for (const track of tracks) {
+    const attempts = data.attempts?.[track];
+    if (!Array.isArray(attempts) || !attempts.length)
+      throw new Error("Missing attempts");
+    if (attempts.at(-1)?.source !== "final")
+      throw new Error("Attempts must end in final");
+    for (const attempt of attempts) {
+      if (
+        !Number.isSafeInteger(attempt.step) ||
+        attempt.step < 0 ||
+        typeof attempt.source !== "string" ||
+        !attempt.source ||
+        (attempt.headline !== null && typeof attempt.headline !== "string") ||
+        !["finished", "crashed", "stalled"].includes(attempt.outcome) ||
+        !Number.isFinite(attempt.progress) ||
+        attempt.progress < 0 ||
+        (attempt.outcome === "finished"
+          ? typeof attempt.lap_time !== "number" ||
+            !Number.isFinite(attempt.lap_time) ||
+            attempt.lap_time <= 0
+          : attempt.lap_time !== null)
+      )
+        throw new Error("Invalid attempt");
+      validateAsset(attempt.replay);
     }
   }
   validateAsset(data.site);
@@ -303,6 +339,28 @@ export class AssetLoader {
       frames.length !== data.metadata.physics_ticks + 1
     )
       throw new Error("Replay identity or tick count mismatch");
+    return { data, frames };
+  }
+  async attemptReplay(
+    attempt: Attempt,
+    trackId: string,
+  ): Promise<{ data: Replay; frames: number[][] }> {
+    const data = await this.json<Replay>(attempt.replay);
+    const frames = decodeReplay(data);
+    const outcome = data.metadata.finished
+      ? "finished"
+      : data.metadata.crashed
+        ? "crashed"
+        : "stalled";
+    if (
+      data.metadata.track_id !== trackId ||
+      outcome !== attempt.outcome ||
+      data.metadata.progress !== attempt.progress ||
+      frames.length !== data.metadata.physics_ticks + 1
+    )
+      throw new Error(
+        "Attempt replay identity, outcome, progress or tick count mismatch",
+      );
     return { data, frames };
   }
   async site(): Promise<SiteData> {

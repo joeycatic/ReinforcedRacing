@@ -127,3 +127,9 @@
 The exporter and browser version gate move to manifest.v3 together so committed assets
 remain loadable and `make test` remains green. The coordinator authorized this minimal
 Task 3 overlap; attempt type validation and replay access remain Task 3 work.
+
+### M8 Task 3: timeline pacing and labels
+
+- Caption training steps use replay `metadata.snapshot_step`, outcomes use replay `finished`/`crashed`, and metres/lap times use replay `progress`/`lap_time`. Preserve the existing `snapshotLabel` formatting (K below one million, M above), despite the brief's `0.33M` example; metadata values remain authoritative. The helper accepts a structural step/id input and remains re-exported from legacy playback until Task 5.
+- Timeline slots include their 1.5-second endpoint caption hold in `displaySeconds`. Jumps preserve play/pause state; replay starts playing from zero; play at the end stays stopped until replay or a jump. Compression applies one common multiplier with individual rates capped at 8×, solving monotonically to 60 seconds where attainable. Final/stalled rates stay fixed; totals below the 65-second threshold retain base pacing.
+- No visualConfig scope expansion: all pacing constants are owned only by the pure timeline; scene integration can consume its slots without repeating them.

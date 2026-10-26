@@ -35,6 +35,19 @@ const manifest = (): Manifest => ({
   versions: { ...VERSIONS },
   simulation: asset,
   tracks: [{ ...asset, id: "sweep", name: "Sweep" }],
+  attempts: {
+    sweep: [
+      {
+        step: 42,
+        source: "final",
+        headline: null,
+        outcome: "crashed",
+        progress: 10,
+        lap_time: null,
+        replay: asset,
+      },
+    ],
+  },
   snapshots: [
     {
       id: "final",
@@ -67,7 +80,9 @@ const replay = (): Replay => ({
 afterEach(() => vi.unstubAllGlobals());
 describe("versioned assets", () => {
   it("rejects manifest v2", () => {
-    expect(() => validateManifest({ ...manifest(), version: "manifest.v2" })).toThrow();
+    expect(() =>
+      validateManifest({ ...manifest(), version: "manifest.v2" }),
+    ).toThrow();
   });
   for (const name of Object.keys(VERSIONS))
     it(`rejects an incompatible ${name} before fetching assets`, async () => {
@@ -176,6 +191,9 @@ it.skipIf(!existsSync(exported + "manifest.json"))(
     );
     await loader.simulation();
     for (const track of loader.manifest.tracks) await loader.track(track.id);
+    for (const track of loader.manifest.tracks)
+      for (const attempt of loader.manifest.attempts[track.id])
+        await loader.attemptReplay(attempt, track.id);
     for (const snapshot of loader.manifest.snapshots) {
       await loader.bytes(snapshot.model);
       for (const track of loader.manifest.tracks) {
@@ -201,4 +219,39 @@ it("rejects manifest v1 and malformed medal ladders", () => {
   const lap = manifest();
   delete lap.medals[0].lap_times.sweep;
   expect(() => validateManifest(lap)).toThrow("lap");
+});
+
+it("requires valid attempts ending in final for every track", () => {
+  const missing = manifest();
+  missing.attempts = {};
+  expect(() => validateManifest(missing)).toThrow("attempt");
+  const bad = manifest();
+  bad.attempts.sweep[0].source = "checkpoint";
+  expect(() => validateManifest(bad)).toThrow("final");
+  expect(
+    validateManifest(
+      JSON.parse(readFileSync(exported + "manifest.json", "utf8")),
+    ).version,
+  ).toBe("manifest.v3");
+});
+it("checks attempt replay identity and outcome", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue(new Response(JSON.stringify(manifest()))),
+  );
+  const loader = await AssetLoader.open(
+    "http://localhost/assets/manifest.json",
+  );
+  const data = replay();
+  data.metadata.progress = 10;
+  vi.spyOn(loader, "json").mockResolvedValue(data);
+  const attempt = manifest().attempts.sweep[0];
+  expect((await loader.attemptReplay(attempt, "sweep")).frames).toHaveLength(3);
+  await expect(loader.attemptReplay(attempt, "ribbon")).rejects.toThrow();
+  await expect(
+    loader.attemptReplay({ ...attempt, progress: 11 }, "sweep"),
+  ).rejects.toThrow();
+  await expect(
+    loader.attemptReplay({ ...attempt, outcome: "stalled" }, "sweep"),
+  ).rejects.toThrow();
 });

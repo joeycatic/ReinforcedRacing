@@ -10,9 +10,10 @@ on:
 permissions:
   contents: read
 
-# Queue releases; an older completion must never cancel a newer deployment.
+# Retain up to 100 pending runs; delayed CI must not replace a newer release.
 concurrency:
   group: pages
+  queue: max
   cancel-in-progress: false
 
 jobs:

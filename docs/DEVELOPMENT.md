@@ -463,7 +463,10 @@ After final local acceptance, push main and inspect its successful CI run.
 [Pages](https://github.com/joeycatic/ReinforcedRacing/actions/workflows/pages.yml)
 automatically builds that exact successful push SHA. It accepts only this repository's
 main push runs, checks the SHA is still main's head before building and publishing,
-and serializes releases. Manual Pages dispatch is main-only and requires a
+and serializes releases with `queue: max` (up to 100 pending runs). Delayed older
+or ineligible runs cannot replace an already queued release. If that bounded queue
+fills, GitHub cancels additional runs; dispatch Pages again on main once capacity
+is available, retaining the same CI checks. Manual Pages dispatch is main-only and requires a
 successful push CI run for the exact current main SHA too. Failed/pending CI, PR/fork
 runs and stale commits cannot authorize a release. A newer main can make an older
 release ineligible; wait for that newer SHA's CI. Enable Pages with GitHub Actions

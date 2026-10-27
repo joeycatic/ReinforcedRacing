@@ -1,4 +1,6 @@
 import json
+import math
+from copy import deepcopy
 from dataclasses import asdict, replace
 from pathlib import Path
 
@@ -209,11 +211,99 @@ def assert_fixture_close(stored: object, fresh: object, path: str = "") -> None:
         assert stored == fresh, path
 
 
+def canonical_probe_events(fixture: dict) -> dict:
+    """Defer only roundoff-ambiguous, scheduled exact-lap probe events.
+
+    This is regeneration portability, not Python/TypeScript parity tolerance.
+    Validate the complete event state before canonicalizing; the following probe
+    is still compared normally, including its interpolated lap timing.
+    """
+    fixture = deepcopy(fixture)
+    probes = fixture["progress_probes"]
+    length = fixture["track"]["arc_length"][-1]
+    checkpoints = len(fixture["track"]["checkpoints"])
+    dt = fixture["config"]["physics"]["dt"]
+    fields = ("laps", "lap_times", "lap_started_at", "last_checkpoint", "next_checkpoint")
+    for i in range(239, len(probes) - 1, 240):
+        previous, current, following = [probes[j]["progress"] for j in (i - 1, i, i + 1)]
+        lap = (i + 1) // 240
+        boundary = lap * length
+        tolerance = 64 * math.ulp(boundary)
+        assert abs(current["unwrapped"] - boundary) <= tolerance
+        assert min(current["projection"]["arc"], length - current["projection"]["arc"]) <= tolerance
+        assert current["delta"] > 0 and not current["wrong_way"]
+        assert previous["laps"] == lap - 1
+        assert previous["next_checkpoint"] == lap * checkpoints
+        expected = {key: previous[key] for key in fields}
+        if current["laps"] == lap:
+            crossed_at = (i + 1) * dt
+            expected.update(
+                laps=lap,
+                lap_times=previous["lap_times"] + [crossed_at - previous["lap_started_at"]],
+                lap_started_at=crossed_at,
+                last_checkpoint=boundary,
+                next_checkpoint=lap * checkpoints + 1,
+            )
+        assert_fixture_close(expected, {key: current[key] for key in fields}, f"probe[{i}]")
+        assert following["laps"] == lap
+        assert following["next_checkpoint"] == lap * checkpoints + 1
+        for key in fields:
+            current[key] = deepcopy(previous[key])
+    return fixture
+
+
+def seam_fixture_pair() -> tuple[dict, dict]:
+    delayed = json.loads((ROOT / "tests/fixtures/parity/ribbon.json").read_text())
+    awarded = deepcopy(delayed)
+    progress = awarded["progress_probes"][239]["progress"]
+    progress.update(
+        laps=1,
+        next_checkpoint=33,
+        last_checkpoint=awarded["track"]["arc_length"][-1],
+        lap_times=[4.0],
+        lap_started_at=4.0,
+    )
+    progress["unwrapped"] = math.nextafter(progress["last_checkpoint"], math.inf)
+    return delayed, awarded
+
+
+def test_exact_seam_regeneration_accepts_only_equivalent_event_state() -> None:
+    delayed, awarded = seam_fixture_pair()
+    assert_fixture_close(canonical_probe_events(delayed), canonical_probe_events(awarded))
+
+
+@pytest.mark.parametrize(
+    "probe,field,value",
+    [
+        (238, "laps", 1),  # A genuine early event, away from the seam.
+        (239, "next_checkpoint", 34),
+        (239, "lap_times", [3.9]),
+        (239, "lap_started_at", 3.9),
+        (239, "last_checkpoint", 775.0),
+        (239, "unwrapped", 789.0),
+        (240, "laps", 0),  # An event that never converges on the next probe.
+        (240, "lap_times", [4.01]),  # A genuinely later crossing.
+    ],
+)
+def test_exact_seam_regeneration_rejects_event_drift(probe: int, field: str, value: object) -> None:
+    delayed, awarded = seam_fixture_pair()
+    awarded["progress_probes"][probe]["progress"][field] = value
+    with pytest.raises(AssertionError):
+        assert_fixture_close(canonical_probe_events(delayed), canonical_probe_events(awarded))
+
+
+def test_exact_seam_regeneration_keeps_unrelated_integers_strict() -> None:
+    delayed, awarded = seam_fixture_pair()
+    awarded["progress_probes"][239]["progress"]["projection"]["index"] += 1
+    with pytest.raises(AssertionError):
+        assert_fixture_close(canonical_probe_events(delayed), canonical_probe_events(awarded))
+
+
 def test_generated_fixtures_are_current() -> None:
     for name, fixture in fixtures().items():
         assert_fixture_close(
-            json.loads((ROOT / "tests/fixtures/parity" / name).read_text()),
-            json.loads(json.dumps(fixture)),
+            canonical_probe_events(json.loads((ROOT / "tests/fixtures/parity" / name).read_text())),
+            canonical_probe_events(json.loads(json.dumps(fixture))),
             name,
         )
 

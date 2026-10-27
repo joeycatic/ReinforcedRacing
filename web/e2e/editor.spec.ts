@@ -145,7 +145,16 @@ test("flip survives sharing", async ({ page }) => {
   await page.evaluate(() => document.fonts.ready);
   const b = (await page.locator("#draw-canvas").boundingBox())!;
   await page.mouse.click(b.x + b.width / 2, b.y + b.height / 2);
+  const crossing = page.locator("#crossing-controls button").first();
+  await crossing.focus();
+  await page.keyboard.press("Enter");
+  await expect(crossing).toBeFocused();
+  await expect(crossing).toHaveAttribute("aria-label", /later pass on top$/);
+  await page.keyboard.press("Space");
+  await expect(crossing).toBeFocused();
+  await expect(crossing).toHaveAttribute("aria-label", /earlier pass on top$/);
   await page.locator("#share").click();
+  await expect(page.locator("#share")).toBeFocused();
   const hash = await page.evaluate(() => location.hash);
   expect(hash).toBe("#t=" + (await code(page, "figure8", true)));
   await page.reload();

@@ -333,6 +333,10 @@ test("race a drawn track", async ({ page }) => {
       "Not available on drawn tracks",
     );
   }
+  await expect(page.locator("#heatmap-summary")).toBeVisible();
+  await expect(page.locator("#heatmap-summary")).toHaveText(
+    "Driving-line and crash heatmaps are available on showcase tracks. AI vision remains live.",
+  );
   await expect(page.locator("#sensors-toggle")).toBeEnabled();
   await page.locator("#sensors-toggle").check();
   await expect(page.locator("#back-to-editor")).toHaveAttribute(

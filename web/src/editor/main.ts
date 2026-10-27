@@ -109,6 +109,9 @@ function render() {
     issues.append(li);
   }
   const buttons = el("crossing-controls");
+  const focusedCrossing = Array.from(buttons.children).indexOf(
+    document.activeElement as Element,
+  );
   buttons.replaceChildren();
   built?.track.data.crossings?.forEach((c, i) => {
     const button = document.createElement("button");
@@ -119,6 +122,7 @@ function render() {
     );
     button.addEventListener("click", () => flip(i));
     buttons.append(button);
+    if (i === focusedCrossing) button.focus();
   });
   el("drawing-prompt").hidden = !!built || points.length > 0;
   paint();

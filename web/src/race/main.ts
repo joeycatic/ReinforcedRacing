@@ -583,7 +583,8 @@ async function boot(): Promise<void> {
         if (control.parentElement?.tagName === "LABEL")
           control.parentElement.title = control.title;
       }
-      element("heatmap-summary").textContent = "Not available on drawn tracks";
+      element("heatmap-summary").textContent =
+        "Driving-line and crash heatmaps are available on showcase tracks. AI vision remains live.";
       element("heatmap-stage").textContent = "FINAL";
     } else viewer = new ViewerController(loader, scene, announce);
     const availableTracks = customTrack

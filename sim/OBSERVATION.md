@@ -71,8 +71,10 @@ identifies the newly selected pool track whenever any row resets.
 ## Editor crossings
 
 For custom `track.v2` tracks, the local projected arc identifies the current branch.
-Within a crossing half-zone (`width / sin(angle) + 2 m`), rays ignore boundary
-segments belonging to the other branch's zone. Circular arc distance handles the
-seam; the nearest branch wins. The `over` choice affects rendering only and never
-observations. Outside crossings, the original ray path is unchanged. No field,
-normalization, shape or version changes: the vector remains `obs.v1`.
+At every car arc, circular arc distance (including across the seam) selects the
+nearest branch of each crossing. Rays ignore boundary segments within the other
+branch's half-zone (`width / sin(angle) + 2 m`); the half-zone bounds the excluded
+boundary segments, not the car position. This can change visibility while approaching
+a crossing. The `over` choice affects rendering only and never observations. Tracks
+without crossings use the original ray path unchanged. No field, normalization,
+shape or version changes: the vector remains `obs.v1`.

@@ -14,12 +14,19 @@ import { RaceEngine, FixedClock } from "./engine";
 import { DriverInput } from "./input";
 import { OnnxPolicy } from "./policy";
 import { RaceScene, minimapPath } from "./scene";
+import { decodeTrack } from "../editor/share";
+import { buildEditorTrack } from "../editor/build";
+import editorConfig from "../editor/editor-config.json";
+import { canSubmit } from "../editor/issues";
 
 function element<T extends HTMLElement = HTMLElement>(id: string): T {
   const found = document.getElementById(id);
   if (!found) throw new Error(`Missing interface element ${id}`);
   return found as T;
 }
+let customCode: string | null = null;
+let damagedLink = false;
+let customTrack: Track | null = null;
 let selectedTrack = "",
   selectedMedal: MedalName = "gold";
 const prerace = element("prerace");
@@ -167,7 +174,9 @@ async function selectRace(): Promise<void> {
     )!;
     const track = tracks.get(selectedTrack)!;
     {
-      const replay = await loader.medalReplay(snapshot, track.data.id);
+      const replay = customTrack
+        ? null
+        : await loader.medalReplay(snapshot, track.data.id);
       if (serial !== loadSerial) return;
       if (policyId !== snapshot.medal) {
         const next = await OnnxPolicy.create(
@@ -185,7 +194,7 @@ async function selectRace(): Promise<void> {
       if (serial !== loadSerial) return;
       engine = new RaceEngine(track, config, policy!);
       clock = new FixedClock(engine);
-      ghostFrames = replay.frames;
+      ghostFrames = replay?.frames ?? [];
       // Warm up the graph before the countdown, keeping the first driving tick smooth.
       await policy!.predict(
         engine.observations.build(
@@ -197,7 +206,7 @@ async function selectRace(): Promise<void> {
     }
     if (serial !== loadSerial) return;
     scene.setTrack(track);
-    await viewer?.setTrack(track);
+    if (!customTrack) await viewer?.setTrack(track);
     if (serial !== loadSerial) return;
     const map = minimapPath(track);
     for (const id of ["route-preview", "minimap"])
@@ -213,11 +222,16 @@ async function selectRace(): Promise<void> {
     labels["track-length"].textContent = Math.round(
       track.length,
     ).toLocaleString("en-US");
-    labels["circuit-name"].textContent = track.data.name.toUpperCase();
-    labels["ai-label"].textContent = snapshot.medal.toUpperCase() + " MEDAL";
-    labels["snapshot-note"].textContent =
-      snapshot.step.toLocaleString("en-US") +
-      " steps of practice. A live policy to beat.";
+    labels["circuit-name"].textContent = customTrack
+      ? "YOUR TRACK"
+      : track.data.name.toUpperCase();
+    labels["ai-label"].textContent = customTrack
+      ? "FINAL POLICY"
+      : snapshot.medal.toUpperCase() + " MEDAL";
+    labels["snapshot-note"].textContent = customTrack
+      ? "The final trained policy. A live opponent on your circuit."
+      : snapshot.step.toLocaleString("en-US") +
+        " steps of practice. A live policy to beat.";
     lastPhase = "";
     lastCrashCount = 0;
     loading = false;
@@ -231,9 +245,12 @@ async function selectRace(): Promise<void> {
       return;
     }
     announce(
-      matchMedia("(max-width:720px)").matches
-        ? "Connect a keyboard or gamepad to drive. Your circuit is ready."
-        : "One lap. No shortcuts. Take the wheel when you’re ready.",
+      (damagedLink
+        ? "This track link is damaged. Choose a showcase circuit. "
+        : "") +
+        (matchMedia("(max-width:720px)").matches
+          ? "Connect a keyboard or gamepad to drive. Your circuit is ready."
+          : "One lap. No shortcuts. Take the wheel when you’re ready."),
     );
   } catch (cause) {
     if (serial === loadSerial) error(cause);
@@ -344,14 +361,18 @@ function updateHud(): void {
       result.hidden = false;
       const win =
         engine.aiLapTime === null || engine.playerLapTime! <= engine.aiLapTime;
-      const medal = earnedMedal(
-        engine.playerLapTime!,
-        loader.manifest.medals,
-        selectedTrack,
-      );
-      labels["result-title"].textContent = medal
-        ? medal.toUpperCase() + " MEDAL"
-        : "NO MEDAL";
+      const medal = customTrack
+        ? null
+        : earnedMedal(
+            engine.playerLapTime!,
+            loader.manifest.medals,
+            selectedTrack,
+          );
+      labels["result-title"].textContent = customTrack
+        ? "LAP COMPLETE"
+        : medal
+          ? medal.toUpperCase() + " MEDAL"
+          : "NO MEDAL";
       labels["result-description"].textContent =
         engine.aiLapTime === null
           ? "Across the line ahead of the AI."
@@ -359,8 +380,10 @@ function updateHud(): void {
       labels["result-player"].textContent = time(engine.playerLapTime);
       labels["result-ai"].textContent = time(
         engine.aiLapTime ??
-          loader.manifest.medals.find((m) => m.medal === selectedMedal)!
-            .lap_times[selectedTrack],
+          (customTrack
+            ? null
+            : loader.manifest.medals.find((m) => m.medal === selectedMedal)!
+                .lap_times[selectedTrack]),
       );
       announce(
         win
@@ -464,6 +487,19 @@ function renderCards(): void {
       "aria-pressed",
       String(card.dataset.track === selectedTrack),
     );
+  if (customTrack) {
+    const card = document.createElement("button");
+    card.className = "medal-card";
+    card.dataset.medal = "author";
+    card.style.setProperty("--medal", MEDAL_COLORS.author);
+    card.setAttribute("aria-pressed", "true");
+    const label = document.createElement("strong");
+    label.textContent = "AI · FINAL POLICY";
+    label.style.gridColumn = "1 / -1";
+    card.append(label);
+    element("medal-cards").replaceChildren(card);
+    return;
+  }
   const medals = medalsForTrack(loader.manifest.medals, selectedTrack);
   if (!medals.some((m) => m.medal === selectedMedal))
     selectedMedal = (medals.find((m) => m.medal === "gold") ?? medals.at(-1)!)
@@ -501,10 +537,57 @@ async function boot(): Promise<void> {
       scene.init(),
     ]);
     config = await loader.simulation();
-    viewer = new ViewerController(loader, scene, announce);
-    for (const descriptor of loader.manifest.tracks) {
-      const track = await loader.track(descriptor.id);
-      tracks.set(descriptor.id, track);
+    const params = new URLSearchParams(location.hash.slice(1));
+    if (params.has("track")) {
+      const code = params.get("track")!;
+      const decoded = decodeTrack(code);
+      if (decoded) {
+        const built = buildEditorTrack(
+          decoded.control,
+          editorConfig,
+          decoded.over,
+        );
+        if (canSubmit(null, built.issues)) {
+          customTrack = built.track;
+          customCode = code;
+        }
+      }
+      damagedLink = !customTrack;
+    }
+    if (customTrack) {
+      selectedMedal = "author";
+      const back = element<HTMLAnchorElement>("back-to-editor");
+      back.href = "./editor.html#t=" + customCode;
+      back.hidden = false;
+      element("circuit-count").textContent = "YOUR CIRCUIT";
+      element("setup-title").textContent = "YOUR DRAWN CIRCUIT.";
+      element("track-cards").setAttribute("aria-label", "Your drawn track");
+      element("medal-cards").setAttribute("aria-label", "Live AI opponent");
+      for (const id of [
+        "ghost-toggle",
+        "visits-toggle",
+        "crashes-toggle",
+        "heatmap-snapshot",
+      ]) {
+        const control = element<HTMLInputElement>(id);
+        control.disabled = true;
+        control.checked = false;
+        control.title = "Not available on drawn tracks";
+        if (control.parentElement?.tagName === "LABEL")
+          control.parentElement.title = control.title;
+      }
+      element("heatmap-summary").textContent = "Not available on drawn tracks";
+      element("heatmap-stage").textContent = "FINAL";
+    } else viewer = new ViewerController(loader, scene, announce);
+    const availableTracks = customTrack
+      ? [customTrack]
+      : await Promise.all(
+          loader.manifest.tracks.map((descriptor) =>
+            loader.track(descriptor.id),
+          ),
+        );
+    for (const track of availableTracks) {
+      tracks.set(track.data.id, track);
       const card = document.createElement("button");
       card.className = "track-card";
       card.dataset.track = track.data.id;
@@ -515,9 +598,12 @@ async function boot(): Promise<void> {
         '" aria-hidden="true"><path d="' +
         map.path +
         '"/></svg><strong></strong><span></span><p></p>';
-      card.querySelector("strong")!.textContent = track.data.name;
+      card.querySelector("strong")!.textContent = customTrack
+        ? "YOUR TRACK"
+        : track.data.name;
       card.querySelector("span")!.textContent = Math.round(track.length) + " m";
-      card.querySelector("p")!.textContent = descriptions[track.data.id];
+      card.querySelector("p")!.textContent =
+        descriptions[track.data.id] ?? "Your line. A live final policy.";
       card.addEventListener("click", () => {
         selectedTrack = track.data.id;
         renderCards();
@@ -525,7 +611,7 @@ async function boot(): Promise<void> {
       });
       element("track-cards").append(card);
     }
-    selectedTrack = loader.manifest.tracks[0].id;
+    selectedTrack = availableTracks[0].data.id;
     renderCards();
     await selectRace();
     requestAnimationFrame(frame);

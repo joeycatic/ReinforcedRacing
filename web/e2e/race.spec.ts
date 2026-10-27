@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import type {} from "./runner";
 const measurements: unknown[] = [];
 test.afterAll(() => {
@@ -177,53 +177,222 @@ for (const track of ["sweep", "ribbon", "technical"])
     measurements.push(result);
   });
 
-test("gate split uses the blue ahead or red behind timing box", async ({
-  page,
-}) => {
-  await page.goto("/race.html");
+for (const drawn of [false, true])
+  test(`gate split uses the blue ahead or red behind timing box${drawn ? " on a drawn track" : ""}`, async ({
+    page,
+  }) => {
+    const url = drawn
+      ? "/race.html#track=" + (await drawnCode(page))
+      : "/race.html";
+    await page.goto(url);
+    await page.evaluate(async () => {
+      // A test-only driver supplies live policy controls to the real race tick.
+      // No production state, split times or rendering methods are replaced.
+      const modulePath = "/src/race/engine.ts";
+      const { RaceEngine } = (await import(
+        modulePath
+      )) as typeof import("../src/race/engine");
+      const tick = RaceEngine.prototype.tick;
+      const previous = new WeakMap<
+        InstanceType<typeof RaceEngine>,
+        import("../src/sim/types").Action
+      >();
+      RaceEngine.prototype.tick = async function (input) {
+        if (
+          this.phase === "racing" &&
+          this.raceTicks % this.config.physics.action_repeat === 0
+        ) {
+          const prediction = await this.policy.predict(
+            this.observations.build(
+              this.player.state,
+              this.player.progress.projection,
+              previous.get(this) ?? [0, 0],
+            ),
+          );
+          input = prediction.action;
+          previous.set(this, input);
+        }
+        await tick.call(this, input);
+      };
+    });
+    await expect(page.locator("#start-button")).toBeEnabled({ timeout: 30000 });
+    await page.locator("#start-button").click();
+    await expect(page.locator("#split-delta")).toHaveClass(/ahead|behind/, {
+      timeout: 20000,
+    });
+    await expect(page.locator("#checkpoint-label")).toHaveText(
+      /CHECKPOINT 0[48]/,
+    );
+    const ahead = await page
+      .locator("#split-delta")
+      .evaluate((el) => el.classList.contains("ahead"));
+    await expect(page.locator("#split-delta")).toHaveCSS(
+      "background-color",
+      ahead ? "rgb(47, 124, 246)" : "rgb(214, 49, 44)",
+    );
+    if (drawn) {
+      await expect(page.locator("#result")).toBeVisible({ timeout: 30000 });
+      await expect(page.locator("#result-title")).toHaveText("LAP COMPLETE", {
+        timeout: 30000,
+      });
+      await expect(page.locator("#result-ai")).toHaveText(/00:20\.\d{3}/);
+      await expect(page.locator("#result-description")).not.toContainText(
+        "MEDAL",
+      );
+    }
+  });
+
+async function drawnCode(page: import("@playwright/test").Page, name = "loop") {
+  const fixture = JSON.parse(
+    readFileSync(`../tests/fixtures/editor/${name}.json`, "utf8"),
+  );
+  await page.goto("/e2e/runner.html");
+  return page.evaluate(
+    async ({ control, over }) => {
+      const { encodeTrack } = await import(
+        /* @vite-ignore */ "/src/editor/" + "share.ts"
+      );
+      return encodeTrack(control, over);
+    },
+    {
+      control: fixture.control,
+      over: (fixture.track.crossings ?? []).map(
+        (c: { over: number }) => c.over,
+      ),
+    },
+  );
+}
+
+test("race a drawn track", async ({ page }) => {
+  const code = await drawnCode(page);
+  const errors: string[] = [],
+    unavailable: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  page.on("request", (r) => {
+    if (/\/assets\/.*(?:heatmap|replay)/.test(r.url()))
+      unavailable.push(r.url());
+  });
+  await page.goto("/race.html#track=" + code);
+  await expect(page.locator("#start-button")).toBeEnabled({ timeout: 30000 });
+  await expect(page.locator(".track-card")).toHaveCount(1);
+  await expect(page.locator(".track-card strong")).toHaveText("YOUR TRACK");
+  await expect(page.locator(".track-card span")).toHaveText(/\d+ m/);
+  await expect(page.locator(".track-card path")).toHaveAttribute("d", /M/);
+  await expect(page.locator(".medal-card")).toHaveCount(1);
+  await expect(page.locator(".medal-card")).toHaveText("AI · FINAL POLICY");
+  await expect(page.locator("#ai-label")).toHaveText("FINAL POLICY");
   await page.evaluate(async () => {
-    // A test-only driver supplies live policy controls to the real race tick.
-    // No production state, split times or rendering methods are replaced.
-    const modulePath = "/src/race/engine.ts";
-    const { RaceEngine } = (await import(
-      modulePath
-    )) as typeof import("../src/race/engine");
+    const { RaceEngine } = await import(
+      /* @vite-ignore */ "/src/race/" + "engine.ts"
+    );
     const tick = RaceEngine.prototype.tick;
-    const previous = new WeakMap<
-      InstanceType<typeof RaceEngine>,
-      import("../src/sim/types").Action
-    >();
-    RaceEngine.prototype.tick = async function (input) {
-      if (
-        this.phase === "racing" &&
-        this.raceTicks % this.config.physics.action_repeat === 0
-      ) {
-        const prediction = await this.policy.predict(
-          this.observations.build(
-            this.player.state,
-            this.player.progress.projection,
-            previous.get(this) ?? [0, 0],
-          ),
-        );
-        input = prediction.action;
-        previous.set(this, input);
-      }
-      await tick.call(this, input);
+    RaceEngine.prototype.tick = async function (
+      action: import("../src/sim/types").Action,
+    ) {
+      await tick.call(this, action);
+      if (this.aiLapTime !== null)
+        document.body.dataset.completedAiLap = String(this.aiLapTime);
     };
   });
-  await expect(page.locator("#start-button")).toBeEnabled({ timeout: 30000 });
-  await page.locator("#start-button").click();
-  await expect(page.locator("#split-delta")).toHaveClass(/ahead|behind/, {
-    timeout: 20000,
+  const captures =
+    "../.superpowers/sdd/2026-10-26-m9-track-editor/scratch/task-8";
+  mkdirSync(captures, { recursive: true });
+  await page.screenshot({
+    path: captures + "/prerace-desktop.png",
+    fullPage: true,
   });
-  await expect(page.locator("#checkpoint-label")).toHaveText(
-    /CHECKPOINT 0[48]/,
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await page.screenshot({
+    path: captures + "/prerace-mobile.png",
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 1440, height: 1050 });
+  for (const id of [
+    "ghost-toggle",
+    "visits-toggle",
+    "crashes-toggle",
+    "heatmap-snapshot",
+  ]) {
+    await expect(page.locator("#" + id)).toBeDisabled();
+    await expect(page.locator("#" + id)).toHaveAttribute(
+      "title",
+      "Not available on drawn tracks",
+    );
+  }
+  await expect(page.locator("#sensors-toggle")).toBeEnabled();
+  await page.locator("#sensors-toggle").check();
+  await expect(page.locator("#back-to-editor")).toHaveAttribute(
+    "href",
+    "./editor.html#t=" + code,
   );
-  const ahead = await page
-    .locator("#split-delta")
-    .evaluate((el) => el.classList.contains("ahead"));
-  await expect(page.locator("#split-delta")).toHaveCSS(
-    "background-color",
-    ahead ? "rgb(47, 124, 246)" : "rgb(214, 49, 44)",
+  await page.locator("#start-button").click();
+  await expect(page.locator("#center-message")).toContainText("3");
+  await expect(page.locator("#race-state")).toHaveText("RACE IN PROGRESS", {
+    timeout: 5000,
+  });
+  await expect(page.locator("#ai-inspector")).toBeVisible();
+  // Observe the real tick's completion; a running timer is not evidence of a lap.
+  await expect(page.locator("body")).toHaveAttribute(
+    "data-completed-ai-lap",
+    /\d+/,
+    { timeout: 35000 },
   );
+  const lap = Number(
+    await page.locator("body").getAttribute("data-completed-ai-lap"),
+  );
+  expect(Math.abs(lap - 20.18641)).toBeLessThan(0.05);
+  await expect(page.locator("#ai-time")).toHaveText(/00:20\.\d{3}/);
+  const displayedLap = await page.locator("#ai-time").innerText();
+  await page.waitForTimeout(700);
+  await expect(page.locator("#ai-time")).toHaveText(displayedLap);
+  console.log("DRAWN RACE LAP", lap);
+  await page.screenshot({
+    path: captures + "/race-desktop.png",
+    fullPage: true,
+  });
+  await page.locator("#pause-button").click();
+  await expect(page.locator("#race-state")).toHaveText("PAUSED");
+  await page.locator(".race-actions .change-race").click();
+  await expect(page.locator(".track-card")).toHaveCount(1);
+  await page.locator("#start-button").click();
+  await expect(page.locator("#race-state")).toHaveText("START SEQUENCE");
+  await expect(page.locator("#ai-time")).not.toHaveText(displayedLap);
+  await page.locator("#back-to-editor").click();
+  await expect(page).toHaveURL(/editor\.html#t=/);
+  await expect(page.locator("#submit")).toBeEnabled();
+  expect(errors).toEqual([]);
+  expect(unavailable).toEqual([]);
+});
+
+test("damaged race link falls back", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await page.goto("/race.html#track=1.broken");
+  await expect(page.locator("#start-button")).toBeEnabled({ timeout: 30000 });
+  await expect(page.locator("#notice")).toContainText(
+    "This track link is damaged",
+  );
+  await expect(page.locator(".track-card")).toHaveCount(3);
+  await expect(page.locator("#back-to-editor")).toBeHidden();
+  await expect(page.locator("#ghost-toggle")).toBeEnabled();
+  await page.locator('[data-track="technical"]').click();
+  await expect(page.locator("#circuit-name")).toHaveText("TECHNICAL LOOP");
+  expect(errors).toEqual([]);
+});
+
+test("invalid drawn geometry falls back to showcase racing", async ({
+  page,
+}) => {
+  const code = await drawnCode(page, "fold");
+  await page.goto("/race.html#track=" + code);
+  await expect(page.locator("#start-button")).toBeEnabled({ timeout: 30000 });
+  await expect(page.locator("#notice")).toContainText(
+    "This track link is damaged",
+  );
+  await expect(page.locator(".track-card")).toHaveCount(3);
 });

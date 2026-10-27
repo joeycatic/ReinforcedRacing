@@ -24,6 +24,8 @@ No install, no backend. The AI opponent is a neural network that runs in your br
   showcase track, one car at a time. Faded trails reveal the emerging racing line.
   Jump between training stages, skip to the final lap, or inspect an optional
   crash heatmap aggregated over 50 stochastic runs at the nearest snapshot at or below that training step.
+- **Draw a track.** Draw one closed stroke with mouse or finger, flip overpasses,
+  watch the final policy try it, then race it or share its URL.
 - **No RL library.** I wrote the PPO, GAE, observation/reward normalization,
   curriculum and the vectorized simulator myself in PyTorch and NumPy, then
   checked the browser port against the Python physics to 1e-12.
@@ -133,9 +135,10 @@ logged in [DECISIONS.md](DECISIONS.md).
 ## Limitations
 
 - You need a keyboard or gamepad to drive. On phones you can still use
-  **Watch it learn**.
+  **Watch it learn**, draw tracks and watch AI trials.
 - Cars pass through each other; there is no car-to-car collision.
-- Races are a single lap on three showcase tracks.
+- Races are a single lap on a showcase or drawn track. The final policy can crash
+  or time out on unfamiliar drawings, including valid geometry.
 
 ## License
 
@@ -145,7 +148,25 @@ logged in [DECISIONS.md](DECISIONS.md).
 
 index.html is the intro with the live final-policy hero and exported evidence.
 race.html opens the track and medal cards; watch.html plays the progressive training
-sequence. The old race.html#watch link redirects to watch.html. All three pages work
+sequence. The old race.html#watch link redirects to watch.html. All four pages work
 under a repository subpath and request only local assets. Watch supports phones and
-starts paused with reduced motion; hiding the tab pauses playback. The track editor
-remains Coming soon (M9). Racing requires a keyboard or gamepad.
+starts paused with reduced motion; hiding the tab pauses playback. `editor.html`
+opens Draw a track. Racing requires a keyboard or gamepad.
+
+## Draw a track
+
+![Stadium track editor with an overpass and tight-corner warning](docs/images/m9-editor.png)
+
+Open `/editor.html` after `make web-dev`. Draw a loop ending near its start; the
+first point sets the start line and drawing direction sets travel direction. Clear
+starts again. Invalid geometry blocks Submit; red tight corners warn but allow it.
+Click a crossing (or its flip button) to choose the upper road. Submit watches the
+shipped final policy until a lap, first crash or 90 seconds. Race it opens the normal
+race on your drawing; Share stores the drawing and bridge choices in the URL fragment,
+without a server. Live AI vision works; exported ghost and heatmap data are unavailable
+for custom tracks.
+
+M9 final acceptance remains pending: the raw final policy laps the simple loop but
+crashes at about 313 m on the valid figure-eight fixture, away from the overpass.
+Valid roads do not guarantee policy generalization; no throttle adapter or new model
+is included. Showcase evaluation results above describe their stated test sets.

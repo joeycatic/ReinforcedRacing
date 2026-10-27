@@ -334,12 +334,12 @@ uv run --locked python -m tools.plot_learning
 
 ## Deploy
 
-Pushing to `main` runs two GitHub Actions workflows: `ci.yml` (`make test` and a
-production build) and `pages.yml` (builds `web/dist/` from the committed assets and
-publishes it to GitHub Pages). Enable Pages once under **Settings → Pages → Source:
-GitHub Actions**. Vite uses relative paths, so the site works from any repository
-sub-path. Training and export never run in CI; re-export locally and commit
-`web/public/assets/` to ship a new policy.
+Pushing to `main` starts CI. Only successful CI for the exact current main SHA
+authorizes Pages to build from committed assets and publish. See [CI and Pages
+release](#ci-and-pages-release) below for functional checks and manual dispatch gates.
+Enable Pages under **Settings → Pages → Source: GitHub Actions**. Vite uses relative
+paths for repository subpaths. Training/export never run in CI; regenerate and commit
+`web/public/assets/` locally to ship a new policy.
 
 ## Recording demo GIFs
 
@@ -364,8 +364,8 @@ automated results.
 
 Run `make web-dev`, open `/` for the intro, `/race.html` for the race, or
 `/watch.html` for progressive training replays (M8). `/race.html#watch` redirects there.
-`make web-build` builds all three HTML entry points (`index.html`, `race.html`,
-`watch.html`), suitable for a static host without SPA route rewriting.
+`make web-build` builds all four HTML entry points (`index.html`, `race.html`,
+`watch.html`, `editor.html`), suitable for a static host without SPA route rewriting.
 
 `make medals` evaluates the 36 retained seed-2 checkpoints without retraining and writes
 `configs/medals.yaml` plus `experiments/medal-selection.json`. `make export` verifies
@@ -420,6 +420,52 @@ E2E_PORT=5181 npm run test:e2e --prefix web
 npm run test:static --prefix web
 ```
 
-The static suite serves the built three-page site under a repository subpath and
+The static suite serves the built four-page site under a repository subpath and
 checks that asset requests stay local. Runtime timing evidence and selection/pacing
 decisions are recorded in [DECISIONS.md](../DECISIONS.md#m8-decisions).
+
+## M9: editor fixtures and local verification
+
+Open `/editor.html` with `make web-dev`. `configs/editor.yaml` is authoritative;
+`web/src/editor/editor-config.json` matches it and adds capture settings.
+`tests/fixtures/editor/` covers loop, figure8, pretzel, fold, overlap, shallow,
+near-start and tight drawings; `tests/fixtures/crossing/figure8.json` covers
+branch-aware observations and controls. `make parity` regenerates both sets and
+the three original showcase fixtures. Always verify the originals stay byte-identical:
+
+```sh
+make parity
+git diff --exit-code tests/fixtures/parity/{sweep,ribbon,technical}.json
+make test
+make web-build
+E2E_PORT=5181 npm run test:e2e --prefix web
+npm run test:static --prefix web
+```
+
+The full local browser suite retains the strict render benchmark and figure-eight
+lap assertion. M9 acceptance is pending: raw policy figure8 crashes near 313 m;
+its valid overpass does not itself guarantee a successful lap. No M9 export or
+training command is needed. Live AI vision uses current observations; custom
+tracks have no exported ghosts, reference medal times or heatmaps.
+
+## CI and Pages release
+
+[CI](https://github.com/joeycatic/ReinforcedRacing/actions/workflows/ci.yml) runs
+locked setup, unit/type checks, build, Chromium functional browser checks and the
+repository-prefix static suite for main pushes, pull requests and manual dispatch.
+Shared hosted CI excludes only `render frame timing during live inference`:
+software rendering and shared CPU scheduling are hardware-dependent (one contended
+local run measured p95 33.3 ms; an isolated run measured about 60 FPS / 16.7 ms).
+The unchanged strict threshold remains required in the full local suite above.
+All functional tests, including figure8 acceptance, remain enabled in CI.
+
+After final local acceptance, push main and inspect its successful CI run.
+[Pages](https://github.com/joeycatic/ReinforcedRacing/actions/workflows/pages.yml)
+automatically builds that exact successful push SHA. It accepts only this repository's
+main push runs, checks the SHA is still main's head before building and publishing,
+and serializes releases. Manual Pages dispatch is main-only and requires a
+successful push CI run for the exact current main SHA too. Failed/pending CI, PR/fork
+runs and stale commits cannot authorize a release. A newer main can make an older
+release ineligible; wait for that newer SHA's CI. Enable Pages with GitHub Actions
+as its source. After deployment verify the Pages URL and smoke-test all four pages.
+Training/export never run in CI; committed public assets supply the site.

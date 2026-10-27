@@ -151,3 +151,22 @@ in metadata. They add no ONNX models. Export verifies checkpoint SHA-256 values 
 `experiments/attempt-selection.json`; deterministic caches under
 `<evaluation_dir>/attempts/<step>/` verify fingerprints and every replay hash.
 Run `make attempts` to select runs, then `make export` to regenerate the bundle.
+
+## Editor tracks (M9)
+
+Custom tracks with crossings serialize as `track.v2`: the usual geometry plus a
+`crossings` array. Each entry contains two branch `arcs` in metres, intersection
+`point` [x,y], `angle` in degrees, `over` (0 or 1), and two `hidden` boundary-segment
+index lists. Left segments precede right segments in the combined index space.
+Loaders recompute and verify this metadata for custom tracks; bridge choice changes
+rendering only. No-crossing tracks remain `track.v1`, including ordinary custom loops.
+The manifest still declares `track.v1`; showcase assets and the figure-eight acceptance
+fixture are unchanged. M9 requires no asset export, new model, replay or heatmap.
+
+Editor/race links use `#track=1.<unpadded-base64url>` containing canonical unsigned
+varints: control count, crossing count, individual 0/1 bridge choices, then zigzag
+x/y coordinate deltas in 0.1 m units. Rounding is ties-to-even. Decode rejects
+noncanonical/truncated streams, trailing bytes, invalid counts (4–256 controls,
+0–128 crossings), coordinates beyond ±1,000,000 m, varints longer than five bytes
+and codes over 10,000 characters. Rebuilding checks crossing counts; blocking
+geometry cannot be submitted or raced. No server stores the drawing.

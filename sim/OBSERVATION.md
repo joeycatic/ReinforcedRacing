@@ -67,3 +67,12 @@ the reset observation. For a crash termination there is no bootstrap. The next p
 action uses the returned reset observation. Reward terms and root info metrics always
 describe the transition just taken, including for rows that reset. `reset_track_index`
 identifies the newly selected pool track whenever any row resets.
+
+## Editor crossings
+
+For custom `track.v2` tracks, the local projected arc identifies the current branch.
+Within a crossing half-zone (`width / sin(angle) + 2 m`), rays ignore boundary
+segments belonging to the other branch's zone. Circular arc distance handles the
+seam; the nearest branch wins. The `over` choice affects rendering only and never
+observations. Outside crossings, the original ray path is unchanged. No field,
+normalization, shape or version changes: the vector remains `obs.v1`.

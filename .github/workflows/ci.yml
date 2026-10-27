@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   test:
@@ -21,3 +25,7 @@ jobs:
       - run: make setup
       - run: make test
       - run: make web-build
+      - run: npx --prefix web playwright install --with-deps chromium
+      # Keep this hardware-dependent benchmark mandatory in the full local suite.
+      - run: npm run test:e2e --prefix web -- --grep-invert '(^| )render frame timing during live inference$'
+      - run: npm run test:static --prefix web

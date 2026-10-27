@@ -62,7 +62,7 @@ State: position `(x, y)`, heading `psi`, body-frame velocity `(vx, vy)`, yaw rat
 - Track width 10–14 m (constant per track for the MVP).
 - Reject and regenerate tracks that self-intersect, whose boundaries overlap, or whose curvature exceeds what the car can physically drive.
 - Representation: centerline polyline with cumulative arc length, tangents, curvature, plus left/right boundary polylines. Checkpoints every 25 m. Start/finish line at arc length 0.
-- Serializable to a versioned JSON format (`track.v1.json`) so the web app loads exactly the same geometry.
+- Serializable to a versioned JSON format (`track.v1.json`) so the web app loads exactly the same geometry. Custom editor tracks with crossings use `track.v2`, adding verified crossing arcs, boundary exclusions and rendering-only overpass choices; ordinary tracks retain `track.v1`.
 - Define 3 fixed **showcase tracks** (fixed seeds, chosen to be fun and varied) in `configs/tracks.yaml`. These are used for evaluation, ghosts, heatmaps and racing in the web app. Training uses a pool of generated tracks; reserve a separate held-out pool for generalization tests.
 
 ### 3.4 Progress tracking
@@ -134,6 +134,10 @@ Single readable file in the spirit of CleanRL. Do not import any RL library in t
 - `make export` assembles `web/public/assets/`: tracks, ONNX models per snapshot, replays, heatmaps, and a `manifest.json` listing everything with versions (`physics`, `obs`, `track`, `replay`, `heatmap`).
 
 ## 7. Physics parity (Python ↔ TypeScript)
+
+Editor-builder fixtures and a crossing trajectory also compare Python and TypeScript.
+Crossing ray exclusions preserve obs.v1; the original three parity fixtures regenerate
+byte-identically.
 
 - The web app contains a TypeScript port of: physics, track geometry/progress, observation builder. Same algorithms, same operation order, float64 (JS numbers).
 - Python generates golden fixtures (`tests/fixtures/parity/*.json`): seed, track, a scripted action sequence of 600 physics steps, and the expected state + observation at every step.
@@ -293,6 +297,10 @@ Replaces spec §8.2 (ghost time-lapse). §8.3 heatmaps stay, as an optional laye
 time; captions match the replay outcomes; the six-ghost simultaneous view is gone.
 
 ### M9: Track editor
+
+**Status: implementation present; final acceptance pending.** The unchanged raw final
+policy completes the simple loop but crashes on the figure-eight away from its crossing.
+Do not mark M9 delivered until the remaining lap acceptance and combined verification pass.
 
 New screen; adds a `track.v2` capability (crossings) to the simulation.
 

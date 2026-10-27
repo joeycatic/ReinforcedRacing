@@ -189,3 +189,21 @@ def test_raw_control_quantization_uses_ties_even_for_both_signs() -> None:
     raw = np.array([[0.25, -0.25], [100.25, -0.25], [100.25, 100.25], [0.25, 100.25]])
     canonical = np.array([[0.2, -0.2], [100.2, -0.2], [100.2, 100.2], [0.2, 100.2]])
     assert build_editor_track(raw, cfg).to_dict() == build_editor_track(canonical, cfg).to_dict()
+
+
+def test_editor_circle_closing_remainder_does_not_fold_boundary() -> None:
+    # Sixty-point desktop stroke, resampled into 24 controls by the UI adapter.
+    angle = np.arange(60) * (2 * np.pi / 60)
+    stroke = np.column_stack(
+        (
+            361.9140625 + 183.65313720703125 * np.cos(angle),
+            -270.078125 - 183.65313720703125 * np.sin(angle),
+        )
+    )
+    at = np.arange(24) * 2.5
+    control = np.array(
+        [stroke[int(i)] * (1 - (i % 1)) + stroke[(int(i) + 1) % 60] * (i % 1) for i in at]
+    )
+    track = build_editor_track(control, load_editor())
+    assert editor_issues(track, load_editor()) == []
+    assert np.linalg.norm(track.centerline[-1] - track.centerline[0]) >= 0.5

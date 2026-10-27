@@ -135,3 +135,28 @@ it("handles duplicate stroke samples", () => {
     strokeToControls(circle, config),
   );
 });
+it("phone-sized closed loop has no overlapping road at the seam", () => {
+  const points: Vec2[] = Array.from({ length: 61 }, (_, i) => [
+    175 + 113.3315734863281 * Math.cos((i * Math.PI) / 30),
+    166.6640625 + 113.3315734863281 * Math.sin((i * Math.PI) / 30),
+  ]);
+  points.push(points[0]);
+  const stroke = strokeToControls(points, config);
+  expect(buildEditorTrack(stroke.control!, config).issues).toEqual([]);
+});
+it("desktop closed loop does not report a false seam intersection", () => {
+  const points: Vec2[] = Array.from({ length: 61 }, (_, i) => [
+    361.9140625 + 183.65313720703125 * Math.cos((i * Math.PI) / 30),
+    270.078125 + 183.65313720703125 * Math.sin((i * Math.PI) / 30),
+  ]);
+  points.push(points[0]);
+  const s = strokeToControls(points, config),
+    b = buildEditorTrack(s.control!, config);
+  expect(b.issues).toEqual([]);
+  expect(
+    Math.hypot(
+      b.track.data.centerline.at(-1)![0] - b.track.data.centerline[0][0],
+      b.track.data.centerline.at(-1)![1] - b.track.data.centerline[0][1],
+    ),
+  ).toBeGreaterThanOrEqual(0.5);
+});

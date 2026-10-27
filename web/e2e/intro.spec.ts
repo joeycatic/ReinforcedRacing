@@ -27,7 +27,7 @@ test("intro works at phone width", async ({ page }) => {
     page.getByRole("link", { name: "Watch it learn", exact: true }),
   ).toBeInViewport();
   await expect(
-    page.getByRole("button", { name: /Draw a track/ }),
+    page.getByRole("link", { name: /Draw a track/ }),
   ).toBeInViewport();
   await page.screenshot({
     path: "test-results/m7-intro-mobile.png",
@@ -38,6 +38,12 @@ test("intro works at phone width", async ({ page }) => {
   await expect(page.locator("#notice")).toContainText("keyboard or gamepad", {
     timeout: 30000,
   });
+});
+test("Draw a track opens the editor", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("link", { name: "Draw a track", exact: true }).click();
+  await expect(page).toHaveURL(/editor\.html$/);
+  await expect(page.locator("#draw-canvas")).toBeVisible();
 });
 test("intro survives a failed model load", async ({ page }) => {
   const errors: string[] = [];

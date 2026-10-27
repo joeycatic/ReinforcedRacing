@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#68a842" />
+    <meta
+      name="description"
+      content="Draw a circuit. Watch the trained AI drive it, race it yourself, and share your track."
+    />
+    <title>Draw a track — Reinforced Racing</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#draw-canvas">Skip to drawing</a>
+    <header>
+      <a class="wordmark" href="./">REINFORCED <b>RACING</b></a>
+      <nav aria-label="Main navigation">
+        <a href="./watch.html">Watch it learn</a
+        ><a href="./race.html">Race the AI</a>
+      </nav>
+    </header>
+    <main class="editor-page">
+      <div class="editor-heading">
+        <h1>YOUR LINE.<br />ITS FIRST LAP.</h1>
+        <p>
+          Draw one continuous loop. Cross your line to build an overpass.<br
+            class="desktop-break"
+          />
+          The AI has never driven this circuit.
+        </p>
+      </div>
+      <div class="editor-layout">
+        <section class="drawing-panel" aria-label="Draw your circuit">
+          <div class="drawing-surface">
+            <canvas
+              id="draw-canvas"
+              tabindex="0"
+              aria-label="Draw a continuous loop with a mouse or finger. Finish near the start. Crossings can be flipped with the buttons below."
+              aria-describedby="drawing-help"
+            ></canvas>
+            <div id="drawing-prompt">
+              <strong>DRAW YOUR CIRCUIT</strong
+              ><span>One line. Finish where you started.</span
+              ><svg viewBox="0 0 100 60" aria-hidden="true">
+                <path d="M20 32C9 7 77 0 84 26S19 66 20 32" />
+                <path d="m14 26 6 7 7-6" />
+              </svg>
+            </div>
+          </div>
+          <div class="drawing-toolbar">
+            <span id="track-stats">YOUR NEXT CIRCUIT</span>
+            <div>
+              <button id="clear" type="button">Clear</button
+              ><button id="submit" class="primary" type="button" disabled>
+                Submit
+                <svg viewBox="0 0 16 16" aria-hidden="true">
+                  <path d="m5 3 6 5-6 5z" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="drawing-notes">
+            <p id="drawing-help">
+              Finish near the start to close the loop. Draw again to replace it.
+              Click an overpass to flip which road sits on top.
+            </p>
+            <ul id="issues" aria-live="polite"></ul>
+            <div id="crossing-controls" aria-label="Overpass controls"></div>
+          </div>
+        </section>
+        <div class="editor-steps">
+          <section class="trial-step">
+            <h2><span>1</span> THE AI DRIVES IT</h2>
+            <p>
+              Submit your track for a live lap by the final policy. Same car,
+              same physics. A new circuit.
+            </p>
+            <div id="trial" hidden aria-label="Live AI trial lap"></div>
+            <output id="trial-result" aria-live="polite"></output>
+            <p id="trial-help" class="detail">
+              A sharp corner might catch it out. You can still race the track.
+            </p>
+          </section>
+          <section>
+            <h2><span>2</span> RACE IT</h2>
+            <p>
+              Take the wheel on your circuit. Keyboard or gamepad required to
+              drive.
+            </p>
+            <a id="race-it" class="action-link" aria-disabled="true"
+              >Race it <span aria-hidden="true">→</span></a
+            >
+          </section>
+          <section>
+            <h2><span>3</span> SHARE IT</h2>
+            <p>
+              Your whole track fits in a link. Send it to a friend and compare
+              your lines.
+            </p>
+            <button id="share" class="action-link" type="button" disabled>
+              Copy track link
+              <svg viewBox="0 0 20 20" aria-hidden="true">
+                <rect x="7" y="7" width="10" height="10" rx="1" />
+                <path d="M12 4H4v8" />
+              </svg>
+            </button>
+            <p id="share-status" role="status"></p>
+            <label id="share-fallback" hidden
+              >Copy this track link<input id="share-url" type="text" readonly
+            /></label>
+          </section>
+        </div>
+      </div>
+    </main>
+    <footer>
+      <a href="./">Reinforced Racing</a><span>Built by joeycatic</span>
+    </footer>
+    <script type="module" src="/src/editor/main.ts"></script>
+  </body>
+</html>

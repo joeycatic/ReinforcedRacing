@@ -144,11 +144,21 @@ export function buildEditorTrack(
           ) * config.quantum,
       ) as Vec2,
   );
+  let centerline = resampleClosed(
+    catmullRom(scaled, config.samples_per_span),
+    config.sample_spacing,
+  );
+  // Match Python: merge a tiny closing remainder into the preceding segment.
+  if (
+    norm([
+      centerline[centerline.length - 1][0] - centerline[0][0],
+      centerline[centerline.length - 1][1] - centerline[0][1],
+    ]) <
+    config.sample_spacing * 0.5
+  )
+    centerline = centerline.slice(0, -1);
   const data = buildTrackData(
-    resampleClosed(
-      catmullRom(scaled, config.samples_per_span),
-      config.sample_spacing,
-    ),
+    centerline,
     config.width,
     config.checkpoint_spacing,
     "custom",

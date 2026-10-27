@@ -49,6 +49,7 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
+        editor: fileURLToPath(new URL("./editor.html", import.meta.url)),
         intro: fileURLToPath(new URL("./index.html", import.meta.url)),
         watch: fileURLToPath(new URL("./watch.html", import.meta.url)),
         race: fileURLToPath(new URL("./race.html", import.meta.url)),

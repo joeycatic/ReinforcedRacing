@@ -33,6 +33,10 @@ def build_editor_track(
     centerline = resample_closed(
         catmull_rom(control, config.samples_per_span), config.sample_spacing
     )
+    # Avoid a near-coincident closing sample: offset boundaries can reverse on
+    # the tiny remainder even when the centerline has gentle curvature.
+    if np.linalg.norm(centerline[-1] - centerline[0]) < config.sample_spacing * 0.5:
+        centerline = centerline[:-1]
     track = build_track(
         centerline, config.width, config.checkpoint_spacing, track_id="custom", name="Your track"
     )

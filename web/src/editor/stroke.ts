@@ -16,11 +16,11 @@ export function strokeToControls(
   if (length < ui.minStrokePx) return { control: null, problem: "too-short" };
   if (distance(points[0], points[points.length - 1]) > ui.closeDistancePx)
     return { control: null, problem: "not-closed" };
-  // Trim the closing tail once it enters the start's capture radius.
-  let end = points.length - 1;
-  while (end > 1 && distance(points[end - 1], points[0]) <= ui.closeDistancePx)
-    end--;
-  const closed = points.slice(0, end);
+  // Preserve the drawn closing arc. Cutting it at the capture radius introduces
+  // a corner at the start, especially on a phone-sized circle. Only remove an
+  // endpoint already coincident with the start before closing the polyline.
+  const closed = points.slice();
+  if (distance(closed[closed.length - 1], closed[0]) < 1e-6) closed.pop();
   closed.push(points[0]);
   const arcs = [0];
   for (let i = 1; i < closed.length; i++)

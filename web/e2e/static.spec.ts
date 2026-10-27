@@ -56,6 +56,9 @@ test("production site works under a GitHub Pages repository prefix with local as
     path: "test-results/m6-production.png",
     fullPage: true,
   });
+  await page.goto("/racing-rl/editor.html");
+  await expect(page.locator("#draw-canvas")).toBeVisible();
+  await expect(page.locator("#submit")).toBeDisabled();
   expect(errors).toEqual([]);
   expect(failed).toEqual([]);
   expect(external).toEqual([]);

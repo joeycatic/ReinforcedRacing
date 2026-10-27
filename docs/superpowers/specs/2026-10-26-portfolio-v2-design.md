@@ -148,6 +148,13 @@ time; captions match the replay outcomes; the six-ghost simultaneous view is gon
 
 ### M9: Track editor
 
+**Owner amendment (2026-10-27):** editor trials and races on drawn tracks with
+crossings use the existing final model with positive throttle capped at 20%.
+Crossing-free drawings retain original controls to preserve successful simple loops. Steering, negative braking,
+value, model assets and simulation are unchanged; showcase/intro/Watch actions remain
+raw. This conservative pace follows a raw-policy figure-eight crash away from its
+crossing and a successful capped native trial. Valid geometry does not guarantee a lap.
+
 New screen; adds a `track.v2` capability (crossings) to the simulation.
 
 **Experience (owner's choices: draw freehand, crossings become over/underpasses, Clear to

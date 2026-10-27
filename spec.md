@@ -298,9 +298,15 @@ time; captions match the replay outcomes; the six-ghost simultaneous view is gon
 
 ### M9: Track editor
 
-**Status: implementation present; final acceptance pending.** The unchanged raw final
-policy completes the simple loop but crashes on the figure-eight away from its crossing.
-Do not mark M9 delivered until the remaining lap acceptance and combined verification pass.
+**Status: delivered; local acceptance verified.**
+Drawn-track AI on drawings with crossings uses the final model with positive throttle
+capped at 20%; crossing-free drawings retain original controls. Steering,
+negative braking and value are unchanged. The owner approved this policy adapter
+after the raw model crashed near 313 m on the figure-eight away from its crossing;
+a capped native trial finished in 35.14 s. Applying the cap to all drawings regressed
+a previously successful clockwise circle, so its scope is limited to overpass drawings.
+Showcase, intro and Watch actions remain raw. The original clockwise-loop and
+figure-eight lap assertions and complete local verification pass with this scoped pace.
 
 New screen; adds a `track.v2` capability (crossings) to the simulation.
 
@@ -321,7 +327,9 @@ start over, Submit when done, then the AI drives it, then you race it)**
   - **Warns but allows**: corners sharper than the training limit (`max_curvature` 0.10) are
     painted red with a "too tight — the AI never trained on corners this sharp" note.
 - **Clear** wipes the drawing.
-- **Submit** → the final policy drives one lap with a follow camera and lap timer. Result: lap
+- **Submit** → the final model, with a 20% positive-throttle cap only when the drawing has
+  crossings, drives one lap with a follow camera and lap timer. The same rule applies when racing a drawn track; valid
+  geometry does not guarantee completion. Result: lap
   time, or "crashed at N m" with the reason when known (e.g. the crash is inside a red section).
 - **Race it** → the normal race screen on the drawn track, AI lap as the target, splits vs AI.
 - **Share** (my addition, owner did not object): the track is encoded in the URL; opening the

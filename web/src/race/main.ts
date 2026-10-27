@@ -13,6 +13,7 @@ import { speed } from "../sim/physics";
 import { RaceEngine, FixedClock } from "./engine";
 import { DriverInput } from "./input";
 import { OnnxPolicy } from "./policy";
+import { policyForTrack } from "./custom-policy";
 import { RaceScene, minimapPath } from "./scene";
 import { decodeTrack } from "../editor/share";
 import { buildEditorTrack } from "../editor/build";
@@ -192,7 +193,11 @@ async function selectRace(): Promise<void> {
         await previous?.release();
       }
       if (serial !== loadSerial) return;
-      engine = new RaceEngine(track, config, policy!);
+      engine = new RaceEngine(
+        track,
+        config,
+        policyForTrack(policy!, !!customTrack, !!track.data.crossings?.length),
+      );
       clock = new FixedClock(engine);
       ghostFrames = replay?.frames ?? [];
       // Warm up the graph before the countdown, keeping the first driving tick smooth.
@@ -229,7 +234,9 @@ async function selectRace(): Promise<void> {
       ? "FINAL POLICY"
       : snapshot.medal.toUpperCase() + " MEDAL";
     labels["snapshot-note"].textContent = customTrack
-      ? "The final trained policy. A live opponent on your circuit."
+      ? track.data.crossings?.length
+        ? "Final model · positive throttle capped at 20% on this overpass track. Sharp corners can still cause crashes."
+        : "Final model · original controls on this track. Sharp corners can still cause crashes."
       : snapshot.step.toLocaleString("en-US") +
         " steps of practice. A live policy to beat.";
     lastPhase = "";

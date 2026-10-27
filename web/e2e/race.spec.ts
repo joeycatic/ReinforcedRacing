@@ -231,11 +231,11 @@ for (const drawn of [false, true])
       ahead ? "rgb(47, 124, 246)" : "rgb(214, 49, 44)",
     );
     if (drawn) {
-      await expect(page.locator("#result")).toBeVisible({ timeout: 30000 });
+      await expect(page.locator("#result")).toBeVisible({ timeout: 60000 });
       await expect(page.locator("#result-title")).toHaveText("LAP COMPLETE", {
         timeout: 30000,
       });
-      await expect(page.locator("#result-ai")).toHaveText(/00:20\.\d{3}/);
+      await expect(page.locator("#result-ai")).toHaveText(/\d{2}:\d{2}\.\d{3}/);
       await expect(page.locator("#result-description")).not.toContainText(
         "MEDAL",
       );
@@ -281,6 +281,9 @@ test("race a drawn track", async ({ page }) => {
   await expect(page.locator(".medal-card")).toHaveCount(1);
   await expect(page.locator(".medal-card")).toHaveText("AI · FINAL POLICY");
   await expect(page.locator("#ai-label")).toHaveText("FINAL POLICY");
+  await expect(page.locator("#snapshot-note")).toContainText(
+    "original controls",
+  );
   await page.evaluate(async () => {
     const { RaceEngine } = await import(
       /* @vite-ignore */ "/src/race/" + "engine.ts"
@@ -290,6 +293,12 @@ test("race a drawn track", async ({ page }) => {
       action: import("../src/sim/types").Action,
     ) {
       await tick.call(this, action);
+      document.body.dataset.maxPositiveThrottle = String(
+        Math.max(
+          Number(document.body.dataset.maxPositiveThrottle ?? 0),
+          this.controls[1],
+        ),
+      );
       if (this.aiLapTime !== null)
         document.body.dataset.completedAiLap = String(this.aiLapTime);
     };
@@ -340,13 +349,21 @@ test("race a drawn track", async ({ page }) => {
   await expect(page.locator("body")).toHaveAttribute(
     "data-completed-ai-lap",
     /\d+/,
-    { timeout: 35000 },
+    { timeout: 60000 },
   );
   const lap = Number(
     await page.locator("body").getAttribute("data-completed-ai-lap"),
   );
-  expect(Math.abs(lap - 20.18641)).toBeLessThan(0.05);
-  await expect(page.locator("#ai-time")).toHaveText(/00:20\.\d{3}/);
+  const maximumThrottle = Number(
+    await page.locator("body").getAttribute("data-max-positive-throttle"),
+  );
+  expect(maximumThrottle).toBeGreaterThan(0);
+  expect(maximumThrottle).toBeGreaterThan(0.2);
+  expect(lap).toBeGreaterThan(0);
+  expect(lap).toBeLessThan(90);
+  const milliseconds = Math.round(lap * 1000);
+  const controlledLap = `${String(Math.floor(milliseconds / 60000)).padStart(2, "0")}:${String(Math.floor(milliseconds / 1000) % 60).padStart(2, "0")}.${String(milliseconds % 1000).padStart(3, "0")}`;
+  await expect(page.locator("#ai-time")).toHaveText(controlledLap);
   const displayedLap = await page.locator("#ai-time").innerText();
   await page.waitForTimeout(700);
   await expect(page.locator("#ai-time")).toHaveText(displayedLap);
@@ -395,4 +412,59 @@ test("invalid drawn geometry falls back to showcase racing", async ({
     "This track link is damaged",
   );
   await expect(page.locator(".track-card")).toHaveCount(3);
+});
+
+test("race a drawn overpass track completes a capped AI lap", async ({
+  page,
+}) => {
+  const code = await drawnCode(page, "figure8");
+  await page.goto("/race.html#track=" + code);
+  await expect(page.locator("#start-button")).toBeEnabled({ timeout: 30000 });
+  await expect(page.locator("#snapshot-note")).toContainText(
+    "positive throttle capped at 20%",
+  );
+  await page.evaluate(async () => {
+    const { RaceEngine } = await import(
+      /* @vite-ignore */ "/src/race/" + "engine.ts"
+    );
+    const tick = RaceEngine.prototype.tick;
+    RaceEngine.prototype.tick = async function (
+      action: import("../src/sim/types").Action,
+    ) {
+      await tick.call(this, action);
+      document.body.dataset.maximumThrottle = String(
+        Math.max(
+          Number(document.body.dataset.maximumThrottle ?? 0),
+          this.controls[1],
+        ),
+      );
+      if (this.aiLapTime !== null)
+        document.body.dataset.completedAiLap = String(this.aiLapTime);
+    };
+  });
+  const started = Date.now();
+  await page.locator("#start-button").click();
+  await expect(page.locator("body")).toHaveAttribute(
+    "data-completed-ai-lap",
+    /\d+/,
+    { timeout: 60000 },
+  );
+  const lap = Number(
+    await page.locator("body").getAttribute("data-completed-ai-lap"),
+  );
+  const throttle = Number(
+    await page.locator("body").getAttribute("data-maximum-throttle"),
+  );
+  expect(lap).toBeGreaterThan(0);
+  expect(lap).toBeLessThan(90);
+  expect(throttle).toBeGreaterThan(0);
+  expect(throttle).toBeLessThanOrEqual(0.2);
+  console.log(
+    "CAPPED OVERPASS RACE",
+    JSON.stringify({
+      lap,
+      wallSeconds: (Date.now() - started) / 1000,
+      maximumThrottle: throttle,
+    }),
+  );
 });

@@ -161,12 +161,17 @@ Open `/editor.html` after `make web-dev`. Draw a loop ending near its start; the
 first point sets the start line and drawing direction sets travel direction. Clear
 starts again. Invalid geometry blocks Submit; red tight corners warn but allow it.
 Click a crossing (or its flip button) to choose the upper road. Submit watches the
-shipped final policy until a lap, first crash or 90 seconds. Race it opens the normal
+shipped final model until a lap, first crash or 90 seconds. On drawings with overpasses only,
+positive throttle is capped at **20%**; steering and braking remain unchanged.
+Crossing-free drawings retain the model’s original controls. Race it opens the normal
 race on your drawing; Share stores the drawing and bridge choices in the URL fragment,
 without a server. Live AI vision works; exported ghost and heatmap data are unavailable
 for custom tracks.
 
-M9 final acceptance remains pending: the raw final policy laps the simple loop but
-crashes at about 313 m on the valid figure-eight fixture, away from the overpass.
-Valid roads do not guarantee policy generalization; no throttle adapter or new model
-is included. Showcase evaluation results above describe their stated test sets.
+The owner approved this conservative pace for overpass drawings after the raw model
+crashed near 313 m on the valid figure-eight; the capped native trial finished in
+35.14 s and the real browser lap in 35.152 s. Crossing-free drawings keep their
+original behavior: applying the cap to all drawings made a clockwise circle that
+lapped in 23.160 s crash near 56 m.
+Valid roads still do not guarantee a lap. Models, simulation, showcase races, intro
+and Watch are unchanged; the showcase results above use original raw policy actions.

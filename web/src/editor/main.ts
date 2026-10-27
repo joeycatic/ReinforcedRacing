@@ -10,6 +10,7 @@ import { AssetLoader } from "../assets/load";
 import { RaceEngine } from "../race/engine";
 import { RaceScene } from "../race/scene";
 import { OnnxPolicy } from "../race/policy";
+import { policyForTrack } from "../race/custom-policy";
 import type { Vec2 } from "../sim/types";
 const el = <T extends HTMLElement = HTMLElement>(id: string) =>
   document.getElementById(id)! as T;
@@ -72,7 +73,14 @@ function code() {
       )
     : null;
 }
+const trialNote = el("trial-policy-note"),
+  defaultTrialNote = trialNote.textContent;
 function render() {
+  trialNote.textContent = built
+    ? built.track.data.crossings?.length
+      ? "The final model drives this overpass track with positive throttle capped at 20%. Sharp corners can still cause crashes."
+      : "The final model drives this track with its original controls. Sharp corners can still cause crashes."
+    : defaultTrialNote;
   const valid = !!built && canSubmit(problem, built.issues) && !damaged;
   submit.disabled = !valid || running;
   share.disabled = !valid;
@@ -361,7 +369,11 @@ async function startTrial() {
       "Final AI driving your circuit",
     );
     scene.setTrack(selected.track);
-    const engine = new RaceEngine(selected.track, simulation, policy),
+    const engine = new RaceEngine(
+        selected.track,
+        simulation,
+        policyForTrack(policy, true, !!selected.track.data.crossings?.length),
+      ),
       trial = new TrialLap(engine, selected.tight);
     run.engine = engine;
     let previous = performance.now(),

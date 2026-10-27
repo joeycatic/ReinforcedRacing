@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import { readFileSync, mkdirSync } from "node:fs";
+import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
 const code = async (page: Page, name: string, flip = false) => {
   const f = JSON.parse(
     readFileSync(`../tests/fixtures/editor/${name}.json`, "utf8"),
@@ -47,25 +47,58 @@ test("draw a loop and the AI laps it", async ({ page }) => {
   await page.goto("/editor.html");
   await loop(page);
   await expect(page.locator("#submit")).toBeEnabled();
+  await expect(page.locator("#trial-policy-note")).toContainText(
+    "original controls",
+  );
+  const started = Date.now();
   await page.locator("#submit").click();
   await expect(page.locator("#trial-result")).toHaveText(/LAP \d:\d\d\.\d{3}/, {
     timeout: 60000,
   });
-  console.log("REAL TRIAL", await page.locator("#trial-result").innerText());
+  const outcome = {
+    lap: await page.locator("#trial-result").innerText(),
+    wallSeconds: (Date.now() - started) / 1000,
+  };
+  console.log("RAW drawn-loop", JSON.stringify(outcome));
+  mkdirSync(captures, { recursive: true });
+  writeFileSync(
+    captures + "/raw-drawn-loop.json",
+    JSON.stringify(outcome, null, 2) + "\n",
+  );
 });
 test("figure-eight AI lap crosses the overpass", async ({ page }) => {
-  await page.goto("/editor.html#t=" + (await code(page, "figure8")));
+  const sharedCode = await code(page, "figure8");
+  mkdirSync(captures, { recursive: true });
+  writeFileSync(captures + "/figure8-share-code.txt", sharedCode + "\n");
+  await page.goto("/editor.html#t=" + sharedCode);
+  await expect(page.locator(".trial-step")).toContainText(
+    "positive throttle capped at 20%",
+  );
   await expect(page.locator("#track-stats")).toContainText("1 OVERPASS");
   mkdirSync(captures, { recursive: true });
   await page.screenshot({
     path: captures + "/figure8-desktop.png",
     fullPage: true,
   });
+  const started = Date.now();
   await page.locator("#submit").click();
   await expect(page.locator("#trial-result")).toHaveText(/LAP \d:\d\d\.\d{3}/, {
     timeout: 60000,
   });
-  console.log("REAL TRIAL", await page.locator("#trial-result").innerText());
+  const outcome = {
+    lap: await page.locator("#trial-result").innerText(),
+    wallSeconds: (Date.now() - started) / 1000,
+  };
+  console.log("CAPPED figure8", JSON.stringify(outcome));
+  mkdirSync(captures, { recursive: true });
+  writeFileSync(
+    captures + "/capped-figure8.json",
+    JSON.stringify(outcome, null, 2) + "\n",
+  );
+  await page.screenshot({
+    path: captures + "/figure8-capped-lap.png",
+    fullPage: true,
+  });
 });
 test("invalid drawing is blocked", async ({ page }) => {
   await page.goto("/editor.html");

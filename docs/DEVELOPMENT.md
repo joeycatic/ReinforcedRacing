@@ -443,10 +443,22 @@ npm run test:static --prefix web
 ```
 
 The full local browser suite retains the strict render benchmark and figure-eight
-lap assertion. M9 acceptance is pending: raw policy figure8 crashes near 313 m;
-its valid overpass does not itself guarantee a successful lap. No M9 export or
-training command is needed. Live AI vision uses current observations; custom
-tracks have no exported ghosts, reference medal times or heatmaps.
+lap assertion. The owner approved a positive-throttle ceiling of 0.2 (20%) only for
+**drawn tracks with crossings**, after the raw final model crashed near 313 m on the
+figure-eight away from its overpass. A capped native trial finished in 35.14 s; real browser editor and custom-race laps
+finish in 35.152 s.
+The shared `policyForTrack` adapter in `web/src/race/custom-policy.ts` requires both
+a custom drawing and crossings before applying the cap; crossing-free custom tracks
+and all showcases retain the identical original policy. Intro and Watch are raw too.
+Steering, negative braking, critic value and the ONNX session lifecycle are unchanged.
+
+An all-drawings cap was rejected: it made the formerly successful clockwise mouse
+circle (raw 23.160 s lap) crash near 56 m. The original clockwise successful-loop
+acceptance is preserved alongside the original figure-eight acceptance. Unit tests
+cover every custom/crossing boundary, and browser tests observe actual completed
+editor/custom-race laps and controls. Valid geometry still cannot guarantee a lap.
+No model, simulation, M9 export or training change is needed. Live AI vision uses
+current observations; custom tracks have no exported ghosts, medal times or heatmaps.
 
 ## CI and Pages release
 
